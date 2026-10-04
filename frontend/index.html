@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal IEQ - Cadastros</title>
+  <title>Portal IEQ - Menu Principal</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -13,72 +13,14 @@
   </header>
 
   <main class="container">
-    <!-- Form Ministério -->
-    <section class="card">
-      <h2 id="titulo-form-ministerio">Cadastrar Ministério (UC02)</h2>
-      <form id="form-ministerio">
-        <input type="hidden" id="min-id" value="">
-        <div class="form-group">
-          <label>Nome do Ministério:</label>
-          <input type="text" id="min-nome" required placeholder="Ex: Louvor, Som e Mídia">
-        </div>
-        <div class="form-group">
-          <label>Funções Obrigatórias (vírgula):</label>
-          <input type="text" id="min-funcoes" required placeholder="Ex: Baixista, Baterista, Operador de Áudio">
-        </div>
-        <button type="submit" class="btn btn-primary">Salvar Ministério</button>
-        <button type="button" id="min-cancelar" class="btn" style="display:none;">Cancelar edição</button>
-      </form>
-    </section>
-
-    <!-- Listagem de Ministérios -->
-    <section class="card">
-      <h2>Ministérios Cadastrados</h2>
-      <ul id="lista-ministerios" class="lista"></ul>
-    </section>
-
-    <!-- Form Voluntário -->
-    <section class="card">
-      <h2 id="titulo-form-voluntario">Cadastrar Voluntário (UC01)</h2>
-      <form id="form-voluntario">
-        <input type="hidden" id="vol-id" value="">
-        <div class="form-group">
-          <label>Nome Completo:</label>
-          <input type="text" id="vol-nome" required placeholder="Ex: João Silva">
-        </div>
-        <div class="form-group">
-          <label>Ministério:</label>
-          <input type="text" id="vol-ministerio" required placeholder="Ex: Louvor">
-        </div>
-        <div class="form-group">
-          <label>Funções Aptas (vírgula):</label>
-          <input type="text" id="vol-funcoes" required placeholder="Ex: Baixista, Violonista">
-        </div>
-        <div class="form-group">
-          <label>Disponibilidade (use: Terça, Sexta, Domingo, Domingo 10h):</label>
-          <input type="text" id="vol-disponibilidade" placeholder="Ex: Domingo, Terça">
-        </div>
-        <div class="form-group">
-          <label>Restrições (datas específicas, vírgula, formato AAAA-MM-DD):</label>
-          <input type="text" id="vol-restricoes" placeholder="Ex: 2026-12-25, 2026-12-31">
-        </div>
-        <button type="submit" class="btn btn-primary">Salvar Voluntário</button>
-        <button type="button" id="vol-cancelar" class="btn" style="display:none;">Cancelar edição</button>
-      </form>
-    </section>
-
-    <!-- Listagem -->
-    <section class="card">
-      <h2>Voluntários Cadastrados</h2>
-      <ul id="lista-voluntarios" class="lista"></ul>
-    </section>
-
-    <!-- Navegação para a tela de Escalas -->
-    <section class="card nav-card">
-      <a href="escalas.html" class="btn btn-primary btn-nav">Ir para Geração de Escalas →</a>
+    <section class="card menu-card">
+      <h2>O que você deseja fazer?</h2>
+      <div class="menu-botoes">
+        <a href="ministerios.html" class="btn btn-primary btn-menu">Cadastrar Ministério</a>
+        <a href="voluntarios.html" class="btn btn-primary btn-menu">Cadastrar Voluntário</a>
+        <a href="escalas.html" class="btn btn-primary btn-menu">Gerar Escalas</a>
+      </div>
     </section>
   </main>
-
-  <script src="js/cadastros.js"></script>
 </body>
 </html>
