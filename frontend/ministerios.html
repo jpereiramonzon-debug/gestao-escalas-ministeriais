@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal IEQ - Ministérios</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>Portal IEQ - Ministérios</h1>
+    <p>Painel Administrativo do Coordenador Ministerial</p>
+  </header>
+
+  <main class="container">
+    <section class="card nav-card">
+      <a href="index.html" class="btn btn-nav">← Voltar ao Menu</a>
+    </section>
+
+    <section class="card">
+      <h2 id="titulo-form-ministerio">Cadastrar Ministério (UC02)</h2>
+      <form id="form-ministerio">
+        <input type="hidden" id="min-id" value="">
+        <div class="form-group">
+          <label>Nome do Ministério:</label>
+          <input type="text" id="min-nome" required placeholder="Ex: Louvor, Som e Mídia">
+        </div>
+        <div class="form-group">
+          <label>Funções Obrigatórias (vírgula):</label>
+          <input type="text" id="min-funcoes" required placeholder="Ex: Baixista, Baterista, Operador de Áudio">
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar Ministério</button>
+        <button type="button" id="min-cancelar" class="btn" style="display:none;">Cancelar edição</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Ministérios Cadastrados</h2>
+      <ul id="lista-ministerios" class="lista"></ul>
+    </section>
+  </main>
+
+  <script src="js/ministerios.js"></script>
+</body>
+</html>

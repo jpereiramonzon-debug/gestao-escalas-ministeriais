@@ -1,0 +1,381 @@
+:root {
+  --cor-primaria: #5b2a86;
+  --cor-primaria-escura: #3f1d5e;
+  --cor-acento: #c9932e;
+  --cor-fundo: #f6f5f9;
+  --cor-superficie: #ffffff;
+  --cor-texto: #241f2e;
+  --cor-texto-suave: #6b6579;
+  --cor-borda: #e3e0ea;
+  --cor-perigo: #b3261e;
+  --cor-perigo-fundo: #fdecea;
+  --cor-sucesso: #1e7d4b;
+  --raio: 10px;
+  --sombra: 0 1px 2px rgba(36, 31, 46, 0.06), 0 4px 12px rgba(36, 31, 46, 0.05);
+  --fonte: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fonte);
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  line-height: 1.5;
+}
+
+.header {
+  background: linear-gradient(90deg, #d9342b 0%, #e8b923 33%, #2563a8 66%, #5b2a86 100%);
+  color: white;
+  padding: 2.25rem 1.5rem 2.5rem;
+  text-align: center;
+  border-bottom: 3px solid var(--cor-acento);
+}
+
+.header h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.65rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.header p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.95rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.container {
+  max-width: 720px;
+  margin: -1.5rem auto 3rem;
+  padding: 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.card {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 1.75rem;
+}
+
+.card h2 {
+  margin: 0 0 1.25rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--cor-primaria-escura);
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.form-group {
+  margin-bottom: 1.1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+  margin-bottom: 0.4rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--cor-texto);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="date"]:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px rgba(91, 42, 134, 0.15);
+}
+
+.form-group input::placeholder {
+  color: #a8a3b3;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 400;
+  font-size: 0.9rem;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem 0.4rem 0.6rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.checkbox-group label:has(input:checked) {
+  background: rgba(91, 42, 134, 0.08);
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria-escura);
+}
+
+.checkbox-group input[type="checkbox"] {
+  accent-color: var(--cor-primaria);
+  width: 15px;
+  height: 15px;
+}
+
+.btn {
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+
+.btn:hover {
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria-escura);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--cor-primaria-escura);
+  border-color: var(--cor-primaria-escura);
+  color: white;
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.lista li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.lista li strong {
+  color: var(--cor-primaria-escura);
+  font-size: 0.98rem;
+}
+
+.lista li > div:last-child {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.lista li:empty::before {
+  content: "Nenhum registro cadastrado ainda.";
+  color: var(--cor-texto-suave);
+}
+
+.nav-card {
+  text-align: center;
+  padding: 1.25rem;
+}
+
+.btn-nav {
+  display: inline-block;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.menu-card {
+  text-align: center;
+}
+
+.menu-botoes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.btn-menu {
+  display: block;
+  text-decoration: none;
+  padding: 1rem;
+  font-size: 1rem;
+}
+
+/* ---------- Calendário de Restrições ---------- */
+
+.calendario {
+  border: 1px solid var(--cor-borda);
+  border-radius: 10px;
+  padding: 1rem;
+  background: var(--cor-fundo);
+  max-width: 320px;
+}
+
+.calendario-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  color: var(--cor-primaria-escura);
+  font-size: 0.95rem;
+}
+
+.calendario-header .btn {
+  padding: 0.3rem 0.7rem;
+  font-size: 1rem;
+  line-height: 1;
+  min-width: 2.2rem;
+}
+
+.calendario-dias-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.3rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+  margin-bottom: 0.4rem;
+}
+
+.calendario-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.3rem;
+}
+
+.calendario-dia {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cor-borda);
+  border-radius: 6px;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.calendario-dia:hover {
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria-escura);
+}
+
+.calendario-dia-selecionado,
+.calendario-dia-selecionado:hover {
+  background: var(--cor-perigo);
+  color: white;
+  border-color: var(--cor-perigo);
+  font-weight: 600;
+}
+
+.calendario-dia-vazio {
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.chip-restricao {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--cor-perigo-fundo);
+  color: var(--cor-perigo);
+  border: 1px solid rgba(179, 38, 30, 0.25);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+#restricoes-selecionadas em {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  font-style: normal;
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 600px) {
+  .container {
+    margin-top: -1rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+
+  .lista li {
+    flex-direction: column;
+  }
+
+  .lista li > div:last-child {
+    width: 100%;
+  }
+
+  .lista li > div:last-child .btn {
+    flex: 1;
+  }
+
+  .calendario {
+    max-width: 100%;
+  }
+}

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal IEQ - Voluntários</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>Portal IEQ - Voluntários</h1>
+    <p>Painel Administrativo do Coordenador Ministerial</p>
+  </header>
+
+  <main class="container">
+    <section class="card nav-card">
+      <a href="index.html" class="btn btn-nav">← Voltar ao Menu</a>
+    </section>
+
+    <section class="card">
+      <h2 id="titulo-form-voluntario">Cadastrar Voluntário (UC01)</h2>
+      <form id="form-voluntario">
+        <input type="hidden" id="vol-id" value="">
+        <div class="form-group">
+          <label>Nome Completo:</label>
+          <input type="text" id="vol-nome" required placeholder="Ex: João Silva">
+        </div>
+
+        <div class="form-group">
+          <label>Ministério:</label>
+          <select id="vol-ministerio" required>
+            <option value="">-- Selecione um ministério --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Funções Aptas (vírgula):</label>
+          <input type="text" id="vol-funcoes" required placeholder="Ex: Baixista, Violonista">
+        </div>
+
+        <div class="form-group">
+          <label>Disponibilidade (use: Terça, Sexta, Domingo, Domingo 10h):</label>
+          <input type="text" id="vol-disponibilidade" placeholder="Ex: Domingo, Terça">
+        </div>
+
+        <div class="form-group">
+          <label>Restrições (clique nos dias em que o voluntário NÃO pode servir):</label>
+          <div class="calendario" id="calendario-restricoes">
+            <div class="calendario-header">
+              <button type="button" id="cal-mes-anterior" class="btn">‹</button>
+              <span id="cal-mes-ano-label"></span>
+              <button type="button" id="cal-mes-seguinte" class="btn">›</button>
+            </div>
+            <div class="calendario-dias-semana">
+              <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+            </div>
+            <div class="calendario-grid" id="calendario-grid"></div>
+          </div>
+          <div id="restricoes-selecionadas" class="checkbox-group" style="margin-top:0.75rem;"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar Voluntário</button>
+        <button type="button" id="vol-cancelar" class="btn" style="display:none;">Cancelar edição</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Voluntários Cadastrados</h2>
+      <ul id="lista-voluntarios" class="lista"></ul>
+    </section>
+  </main>
+
+  <script src="js/voluntarios.js"></script>
+</body>
+</html>

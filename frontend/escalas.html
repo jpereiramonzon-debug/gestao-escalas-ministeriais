@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal IEQ - Geração de Escalas</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>Portal IEQ - Geração de Escalas</h1>
+    <p>Painel Administrativo do Coordenador Ministerial</p>
+  </header>
+
+  <main class="container">
+    <!-- Navegação de volta para Cadastros -->
+    <section class="card nav-card">
+      <a href="index.html" class="btn btn-nav">← Voltar para Cadastros</a>
+    </section>
+
+    <!-- Geração Automática de Escala (RF03) -->
+    <section class="card">
+      <h2>Gerar Escala Automática (UC03)</h2>
+      <div class="form-group">
+        <label>Ano:</label>
+        <input type="text" id="escala-ano" placeholder="Ex: 2026" value="2026">
+      </div>
+      <div class="form-group">
+        <label>Mês:</label>
+        <select id="escala-mes">
+          <option value="1">Janeiro</option>
+          <option value="2">Fevereiro</option>
+          <option value="3">Março</option>
+          <option value="4">Abril</option>
+          <option value="5">Maio</option>
+          <option value="6">Junho</option>
+          <option value="7">Julho</option>
+          <option value="8">Agosto</option>
+          <option value="9">Setembro</option>
+          <option value="10" selected>Outubro</option>
+          <option value="11">Novembro</option>
+          <option value="12">Dezembro</option>
+        </select>
+      </div>
+      <button type="button" id="carregar-status-btn" class="btn btn-primary">Carregar Status do Mês</button>
+
+      <ul id="lista-status-ministerios" class="lista" style="margin-top:1rem;"></ul>
+    </section>
+
+        <!-- Visualização da Escala Gerada -->
+    <section class="card">
+      <h2>Escala do Mês</h2>
+      <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button type="button" id="enviar-whatsapp-btn" class="btn btn-primary">Enviar para o WhatsApp</button>
+        <button type="button" id="copiar-texto-btn" class="btn">Copiar Texto</button>
+      </div>
+      <ul id="visualizacao-escala" class="lista"></ul>
+    </section>
+  </main>
+
+  <script src="js/escalas.js"></script>
+</body>
+</html>
