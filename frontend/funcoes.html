@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal IEQ - Funções</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>Portal IEQ - Funções</h1>
+    <p>Painel Administrativo do Coordenador Ministerial</p>
+  </header>
+
+  <main class="container">
+    <section class="card nav-card">
+      <a href="index.html" class="btn btn-nav">← Voltar ao Menu</a>
+    </section>
+
+    <section class="card">
+      <h2 id="titulo-form-funcao">Cadastrar Função</h2>
+      <form id="form-funcao">
+        <input type="hidden" id="func-id" value="">
+        <div class="form-group">
+          <label>Nome da Função:</label>
+          <input type="text" id="func-nome" required placeholder="Ex: Baixista, Baterista, Operador de Áudio">
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar Função</button>
+        <button type="button" id="func-cancelar" class="btn" style="display:none;">Cancelar edição</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Funções Cadastradas</h2>
+      <ul id="lista-funcoes" class="lista"></ul>
+    </section>
+  </main>
+
+  <script src="js/funcoes.js"></script>
+</body>
+</html>

@@ -1,133 +1,172 @@
-// Atende RF02 (CRUD de Ministérios) via Fetch API
-// Usado apenas na página ministerios.html
+let todosMinisterios = [];
+let todasFuncoes = [];
 
-const formMinisterio = document.getElementById('form-ministerio');
-const listaMinisterios = document.getElementById('lista-ministerios');
-const minCancelarBtn = document.getElementById('min-cancelar');
+document.addEventListener('DOMContentLoaded', () => {
+    carregarFuncoes();
+    carregarMinisterios();
 
-let ministeriosCache = [];
+    document.getElementById('form-ministerio').addEventListener('submit', salvarMinisterio);
+    document.getElementById('pesquisa').addEventListener('input', filtrarMinisterios);
+});
 
-const parseCsv = (input) => {
-  return input
-    .split(',')
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
-};
+async function carregarFuncoes(funcoesSelecionadas = []) {
+    const container = document.getElementById('container-funcoes');
+    try {
+        if(todasFuncoes.length === 0){
+            const response = await fetch('/api/funcoes');
+            todasFuncoes = await response.json();
+        }
+        
+        container.innerHTML = ''; 
 
-const showError = (message) => {
-  alert(message);
-};
+        if (todasFuncoes.length === 0) {
+            container.innerHTML = '<em>Nenhuma função cadastrada ainda.</em>';
+            return;
+        }
 
-const fetchJson = async (url, options = {}) => {
-  const response = await fetch(url, options);
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || 'Erro na requisição.');
-  }
-  return data;
-};
+        todasFuncoes.forEach(funcao => {
+            const nomeFuncao = funcao.nome || funcao.Nome;
+            const isChecked = funcoesSelecionadas.includes(nomeFuncao) ? 'checked' : '';
+            
+            const label = document.createElement('label');
+            label.className = 'checkbox-item';
+            label.innerHTML = `
+                <input type="checkbox" name="funcao_obrigatoria" value="${nomeFuncao}" ${isChecked}>
+                ${nomeFuncao}
+            `;
+            container.appendChild(label);
+        });
+    } catch (error) {
+        console.error('Erro ao carregar funções:', error);
+    }
+}
 
-const carregarMinisterios = async () => {
-  try {
-    const ministerios = await fetchJson('/api/ministerios');
-    ministeriosCache = ministerios;
+async function carregarMinisterios() {
+    const lista = document.getElementById('lista-ministerios');
+    try {
+        lista.innerHTML = '<em>Carregando ministérios...</em>';
+        const response = await fetch('/api/ministerios');
+        todosMinisterios = await response.json();
+        renderizarMinisterios(todosMinisterios);
+    } catch (error) {
+        console.error('Erro ao carregar ministérios:', error);
+    }
+}
 
-    listaMinisterios.innerHTML = ministerios
-      .map(
-        (min) => `
-          <li>
-            <div>
-              <strong>${min.nome}</strong><br>
-              Funções obrigatórias: ${Array.isArray(min.funcoes_obrigatorias) ? min.funcoes_obrigatorias.join(', ') : ''}
-            </div>
-            <div>
-              <button class="btn" data-editar-min="${min._id}" type="button">Editar</button>
-              <button class="btn" data-excluir-min="${min._id}" type="button" style="background:#e74c3c; color:white;">Excluir</button>
-            </div>
-          </li>
-        `
-      )
-      .join('');
-  } catch (error) {
-    showError(error.message);
-  }
-};
+async function salvarMinisterio(event) {
+    event.preventDefault();
 
-const resetFormMinisterio = () => {
-  formMinisterio.reset();
-  document.getElementById('min-id').value = '';
-  document.getElementById('titulo-form-ministerio').textContent = 'Cadastrar Ministério (UC02)';
-  minCancelarBtn.style.display = 'none';
-};
+    const id = document.getElementById('edit-id').value;
+    const nome = document.getElementById('nome').value;
+    const checkboxes = document.querySelectorAll('input[name="funcao_obrigatoria"]:checked');
+    const funcoesSelecionadas = Array.from(checkboxes).map(cb => cb.value);
 
-const handleMinisterioSubmit = async (event) => {
-  event.preventDefault();
-
-  const id = document.getElementById('min-id').value;
-  const nome = document.getElementById('min-nome').value.trim();
-  const funcoes_obrigatorias = parseCsv(document.getElementById('min-funcoes').value);
-
-  if (!nome || funcoes_obrigatorias.length === 0) {
-    return showError('Preencha o nome do ministério e pelo menos uma função.');
-  }
-
-  try {
-    if (id) {
-      await fetchJson(`/api/ministerios/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, funcoes_obrigatorias }),
-      });
-      alert('Ministério atualizado com sucesso!');
-    } else {
-      await fetchJson('/api/ministerios', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, funcoes_obrigatorias }),
-      });
-      alert('Ministério cadastrado com sucesso!');
+    if (funcoesSelecionadas.length === 0) {
+        alert('Selecione pelo menos uma função obrigatória para este ministério.');
+        return;
     }
 
-    resetFormMinisterio();
-    await carregarMinisterios();
-  } catch (error) {
-    showError(error.message);
-  }
-};
-
-const handleListaMinisteriosClick = async (event) => {
-  const btnEditar = event.target.closest('button[data-editar-min]');
-  const btnExcluir = event.target.closest('button[data-excluir-min]');
-
-  if (btnEditar) {
-    const id = btnEditar.dataset.editarMin;
-    const ministerio = ministeriosCache.find((m) => m._id === id);
-    if (!ministerio) return showError('Ministério não encontrado.');
-
-    document.getElementById('min-id').value = ministerio._id;
-    document.getElementById('min-nome').value = ministerio.nome;
-    document.getElementById('min-funcoes').value = ministerio.funcoes_obrigatorias.join(', ');
-    document.getElementById('titulo-form-ministerio').textContent = 'Editar Ministério';
-    minCancelarBtn.style.display = 'inline-block';
-    formMinisterio.scrollIntoView({ behavior: 'smooth' });
-    return;
-  }
-
-  if (btnExcluir) {
-    const id = btnExcluir.dataset.excluirMin;
-    if (!confirm('Deseja remover este ministério?')) return;
+    const ministerioData = {
+        nome: nome,
+        funcoes_obrigatorias: funcoesSelecionadas
+    };
 
     try {
-      await fetchJson(`/api/ministerios/${id}`, { method: 'DELETE' });
-      await carregarMinisterios();
+        const url = id ? `/api/ministerios/${id}` : '/api/ministerios';
+        const method = id ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(ministerioData)
+        });
+
+        if (response.ok) {
+            alert(id ? 'Ministério atualizado!' : 'Ministério cadastrado!');
+            cancelarEdicao();
+            carregarMinisterios(); 
+        } else {
+            const error = await response.json();
+            alert(`Erro: ${error.error}`);
+        }
     } catch (error) {
-      showError(error.message);
+        console.error('Erro ao salvar ministério:', error);
+        alert('Erro de conexão ao salvar ministério.');
     }
-  }
-};
+}
 
-formMinisterio.addEventListener('submit', handleMinisterioSubmit);
-listaMinisterios.addEventListener('click', handleListaMinisteriosClick);
-minCancelarBtn.addEventListener('click', resetFormMinisterio);
+function renderizarMinisterios(ministerios) {
+    const lista = document.getElementById('lista-ministerios');
+    lista.innerHTML = '';
 
-window.addEventListener('load', carregarMinisterios);
+    if (ministerios.length === 0) {
+        lista.innerHTML = '<em>Nenhum ministério encontrado.</em>';
+        return;
+    }
+
+    ministerios.forEach(min => {
+        const funcoesText = (min.funcoes_obrigatorias || []).join(', ');
+        const nomeMin = min.nome || 'Sem nome';
+
+        const div = document.createElement('div');
+        div.className = 'item-lista';
+        div.innerHTML = `
+            <div class="item-info">
+                <div class="item-nome">${nomeMin}</div>
+                <div class="item-detalhes"><strong>Funções:</strong> ${funcoesText || 'Nenhuma'}</div>
+            </div>
+            <div class="acoes">
+                <button class="btn-acao" onclick="editarMinisterio('${min._id}')">Editar</button>
+                <button class="btn-acao btn-excluir" onclick="excluirMinisterio('${min._id}')">Excluir</button>
+            </div>
+        `;
+        lista.appendChild(div);
+    });
+}
+
+function filtrarMinisterios(event) {
+    const termo = event.target.value.toLowerCase();
+    const filtrados = todosMinisterios.filter(min => {
+        const nome = (min.nome || '').toLowerCase();
+        const funcoes = (min.funcoes_obrigatorias || []).join(' ').toLowerCase();
+        return nome.includes(termo) || funcoes.includes(termo);
+    });
+    renderizarMinisterios(filtrados);
+}
+
+function editarMinisterio(id) {
+    const min = todosMinisterios.find(m => m._id === id);
+    if (!min) return;
+
+    document.getElementById('edit-id').value = min._id;
+    document.getElementById('nome').value = min.nome;
+    
+    carregarFuncoes(min.funcoes_obrigatorias || []);
+
+    document.getElementById('btn-submit').textContent = 'Atualizar Ministério';
+    document.getElementById('btn-cancelar').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelarEdicao() {
+    document.getElementById('form-ministerio').reset();
+    document.getElementById('edit-id').value = '';
+    carregarFuncoes([]); 
+    document.getElementById('btn-submit').textContent = 'Salvar Ministério';
+    document.getElementById('btn-cancelar').style.display = 'none';
+}
+
+async function excluirMinisterio(id) {
+    if (!confirm('Tem certeza que deseja excluir este ministério?')) return;
+    try {
+        const response = await fetch(`/api/ministerios/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            alert('Ministério excluído!');
+            carregarMinisterios();
+        } else {
+            alert('Erro ao excluir ministério.');
+        }
+    } catch (error) {
+        alert('Erro de conexão ao excluir.');
+    }
+}

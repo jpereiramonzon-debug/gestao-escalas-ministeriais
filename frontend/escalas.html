@@ -1,63 +1,125 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal IEQ - Geração de Escalas</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Escalas</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        /* Estilo padronizado para o botão voltar (como na imagem 2) */
+        .btn-voltar {
+            display: block;
+            width: fit-content;
+            margin: 0 auto 20px;
+            padding: 10px 20px;
+            background: white;
+            border: 1px solid #4a235a;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #4a235a;
+            font-weight: 500;
+        }
+
+        h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; }
+        .gerar-escala-container { display: flex; gap: 15px; align-items: center; margin: 20px 0; padding: 20px; background: #ecf0f1; border-radius: 6px; flex-wrap: wrap; }
+        label { font-weight: bold; }
+        input[type="number"], select { padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 16px; }
+        select { flex: 1; min-width: 200px; }
+        button { padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
+        button:hover { background-color: #2980b9; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        th { background-color: #f8f9fa; color: #2c3e50; font-weight: 600; text-transform: uppercase; font-size: 14px; }
+        tr:hover { background-color: #f1f5f8; }
+        
+        .vaga-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #ddd; }
+        .vaga-item:last-child { border-bottom: none; }
+        
+        .btn-editar { background-color: transparent; color: #333; border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: background 0.2s; }
+        .btn-editar:hover { background-color: #eee; }
+        
+        .btn-salvar-mes { background-color: #27ae60; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .btn-salvar-mes:hover { background-color: #219150; }
+        
+        .btn-reabrir { background-color: #e74c3c; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .btn-reabrir:hover { background-color: #c0392b; }
+
+        .painel-acoes { margin-top: 30px; padding: 20px; background: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 6px; }
+        .linha-acao { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+        .linha-acao:last-child { border-bottom: none; }
+    </style>
 </head>
 <body>
-  <header class="header">
-    <h1>Portal IEQ - Geração de Escalas</h1>
-    <p>Painel Administrativo do Coordenador Ministerial</p>
-  </header>
+    <div class="container">
+        <!-- Botão voltar agora está usando a classe padronizada -->
+        <a href="index.html" class="btn-voltar">← Voltar ao Menu</a>
+        
+        <h1>Gerar Escala</h1>
+        
+        <div class="gerar-escala-container">
+            <label for="input-ano">Ano:</label>
+            <input type="number" id="input-ano" value="2026" style="width: 80px;">
 
-  <main class="container">
-    <!-- Navegação de volta para Cadastros -->
-    <section class="card nav-card">
-      <a href="index.html" class="btn btn-nav">← Voltar para Cadastros</a>
-    </section>
+            <label for="input-mes">Mês:</label>
+            <input type="number" id="input-mes" value="11" min="1" max="12" style="width: 60px;">
 
-    <!-- Geração Automática de Escala (RF03) -->
-    <section class="card">
-      <h2>Gerar Escala Automática (UC03)</h2>
-      <div class="form-group">
-        <label>Ano:</label>
-        <input type="text" id="escala-ano" placeholder="Ex: 2026" value="2026">
-      </div>
-      <div class="form-group">
-        <label>Mês:</label>
-        <select id="escala-mes">
-          <option value="1">Janeiro</option>
-          <option value="2">Fevereiro</option>
-          <option value="3">Março</option>
-          <option value="4">Abril</option>
-          <option value="5">Maio</option>
-          <option value="6">Junho</option>
-          <option value="7">Julho</option>
-          <option value="8">Agosto</option>
-          <option value="9">Setembro</option>
-          <option value="10" selected>Outubro</option>
-          <option value="11">Novembro</option>
-          <option value="12">Dezembro</option>
-        </select>
-      </div>
-      <button type="button" id="carregar-status-btn" class="btn btn-primary">Carregar Status do Mês</button>
+            <label for="select-ministerio-gerar">Ministério:</label>
+            <select id="select-ministerio-gerar" required>
+                <option value="">Carregando ministérios...</option>
+            </select>
+            <button onclick="gerarEscala()">Gerar Escala</button>
+        </div>
 
-      <ul id="lista-status-ministerios" class="lista" style="margin-top:1rem;"></ul>
-    </section>
+        <h2>Escalas Geradas</h2>
+        <table id="tabela-escalas">
+            <thead>
+                <tr>
+                    <th style="text-align: center;">Data/Horário</th>
+                    <th style="text-align: center;">Ministério</th>
+                    <th>Escala (Funções e Voluntários)</th>
+                    <th style="text-align: center;">Status</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-escalas">
+                <!-- Preenchido via JS -->
+            </tbody>
+        </table>
 
-        <!-- Visualização da Escala Gerada -->
-    <section class="card">
-      <h2>Escala do Mês</h2>
-      <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <button type="button" id="enviar-whatsapp-btn" class="btn btn-primary">Enviar para o WhatsApp</button>
-        <button type="button" id="copiar-texto-btn" class="btn">Copiar Texto</button>
-      </div>
-      <ul id="visualizacao-escala" class="lista"></ul>
-    </section>
-  </main>
+        <!-- Painel para salvar a escala do mês de cada ministério no final -->
+        <div class="painel-acoes" id="painel-acoes" style="display: none;">
+            <h3 style="margin-top: 0; color: #2c3e50;">Ações do Mês</h3>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Finalize a escala para travar edições e concluir o mês.</p>
+            <div id="lista-acoes-mes">
+                <!-- Preenchido via JS -->
+            </div>
+        </div>
+    </div>
 
-  <script src="js/escalas.js"></script>
+    <!-- MODAL DE EDIÇÃO -->
+    <div id="modal-editar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index: 1000;">
+        <div style="background:#fff; padding:25px; border-radius:8px; width:400px; max-width:90%; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+            <h3 style="margin-top:0; color:#2c3e50;">Substituir Voluntário</h3>
+            <p id="edit-info" style="color:#555; background:#f9f9f9; padding:10px; border-radius:4px; border: 1px solid #eee;"></p>
+            
+            <label style="display:block; margin-bottom:8px; font-weight:bold;">Selecione o Voluntário:</label>
+            <select id="select-novo-voluntario" style="width:100%; margin-bottom:20px; padding:10px;"></select>
+            
+            <input type="hidden" id="edit-escala-id">
+            <input type="hidden" id="edit-ministerio-id">
+            <input type="hidden" id="edit-funcao">
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="fecharModal()" style="background-color:#95a5a6; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer;">Cancelar</button>
+                <button onclick="salvarEdicaoVaga()" style="background-color:#27ae60; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">Salvar Alteração</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/escalas.js"></script>
 </body>
 </html>

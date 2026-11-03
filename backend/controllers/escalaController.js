@@ -1,10 +1,5 @@
 // Atende ao Caso de Uso "Gerar escala automática" (UC03) e Requisitos
 // Funcionais RF03/RF04, aplicando as Regras de Negócio RN01 a RN05.
-//
-// FLUXO: o coordenador escolhe MANUALMENTE a ordem dos ministérios.
-// Cada ministério processado "reserva" os voluntários já escalados,
-// que passam a ser restrição (RN01) para os próximos ministérios
-// gerados no mesmo mês.
 import { getDB } from '../config/db.js';
 import { ObjectId } from 'mongodb';
 import { gerarCultosDoMes, identificadorDisponibilidade } from '../utils/cultos.js';
@@ -14,8 +9,12 @@ function possuiRestricao(voluntario, dataCulto) {
 }
 
 function estaDisponivel(voluntario, culto) {
+  // CORREÇÃO: Se o voluntário não preencheu disponibilidades específicas, assumimos que está sempre disponível.
+  if (!voluntario.disponibilidades || voluntario.disponibilidades.length === 0) {
+      return true; 
+  }
   const identificador = identificadorDisponibilidade(culto);
-  return (voluntario.disponibilidades || []).includes(identificador);
+  return voluntario.disponibilidades.includes(identificador);
 }
 
 function escolherPorEquidade(candidatos, contagemDeEscalas) {
@@ -66,11 +65,23 @@ export async function statusDoMes(req, res) {
       culto.ministerios.forEach((min) => idsProcessados.add(String(min.ministerio_id)));
     });
 
-    const ministeriosComStatus = todosMinisterios.map((min) => ({
-      _id: min._id,
-      nome: min.nome,
-      processado: idsProcessados.has(String(min._id))
-    }));
+    const ministeriosComStatus = todosMinisterios.map((min) => {
+      let finalizado = false;
+      for (const culto of cultosDoMes) {
+        const bloco = culto.ministerios.find((m) => String(m.ministerio_id) === String(min._id));
+        if (bloco) {
+          finalizado = bloco.finalizado === true;
+          break;
+        }
+      }
+
+      return {
+        _id: min._id,
+        nome: min.nome,
+        processado: idsProcessados.has(String(min._id)),
+        finalizado
+      };
+    });
 
     res.status(200).json({
       total_cultos: cultosDoMes.length,
@@ -107,6 +118,7 @@ export async function gerarParaMinisterio(req, res) {
       const jaExisteEsteMinisterio = cultoDoc.ministerios.some(
         (min) => String(min.ministerio_id) === String(ministerio._id)
       );
+      
       if (jaExisteEsteMinisterio) {
         resultado.push({ data_culto: cultoDoc.data_culto, horario: cultoDoc.horario, aviso: 'Já processado, pulado.' });
         continue;
@@ -148,7 +160,8 @@ export async function gerarParaMinisterio(req, res) {
       const blocoMinisterio = {
         ministerio_id: ministerio._id,
         ministerio_nome: ministerio.nome,
-        vagas_preenchidas: vagasPreenchidas
+        vagas_preenchidas: vagasPreenchidas,
+        finalizado: false
       };
 
       await db.collection('escalas').updateOne(
@@ -185,6 +198,79 @@ export async function desfazerMinisterio(req, res) {
   }
 }
 
+export async function finalizarMinisterio(req, res) {
+  try {
+    const { ano, mes, ministerioId } = req.params;
+    const db = getDB();
+
+    const cultosDoMes = await db
+      .collection('escalas')
+      .find({ data_culto: { $regex: `^${ano}-${String(mes).padStart(2, '0')}` } })
+      .sort({ data_culto: 1, horario: 1 })
+      .toArray();
+
+    const vagasAbertas = [];
+    let ministerioFoiGerado = false;
+
+    cultosDoMes.forEach((culto) => {
+      const bloco = culto.ministerios.find((m) => String(m.ministerio_id) === ministerioId);
+      if (!bloco) return;
+      ministerioFoiGerado = true;
+
+      bloco.vagas_preenchidas.forEach((vaga) => {
+        if (vaga.nome === 'VAGO') {
+          vagasAbertas.push(`${culto.data_culto} (${vaga.funcao})`);
+        }
+      });
+    });
+
+    if (!ministerioFoiGerado) {
+      return res.status(400).json({ error: 'Gere a escala deste ministério antes de finalizar.' });
+    }
+
+    if (vagasAbertas.length > 0) {
+      return res.status(400).json({
+        error: `Não é possível finalizar: ainda há vagas em aberto em: ${vagasAbertas.join(', ')}`
+      });
+    }
+
+    await db.collection('escalas').updateMany(
+      {
+        data_culto: { $regex: `^${ano}-${String(mes).padStart(2, '0')}` },
+        'ministerios.ministerio_id': new ObjectId(ministerioId)
+      },
+      { $set: { 'ministerios.$[elem].finalizado': true } },
+      { arrayFilters: [{ 'elem.ministerio_id': new ObjectId(ministerioId) }] }
+    );
+
+    res.status(200).json({ message: 'Ministério finalizado com sucesso para todo o mês.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao finalizar ministério.' });
+  }
+}
+
+export async function reabrirMinisterio(req, res) {
+  try {
+    const { ano, mes, ministerioId } = req.params;
+    const db = getDB();
+
+    await db.collection('escalas').updateMany(
+      {
+        data_culto: { $regex: `^${ano}-${String(mes).padStart(2, '0')}` },
+        'ministerios.ministerio_id': new ObjectId(ministerioId)
+      },
+      { $set: { 'ministerios.$[elem].finalizado': false } },
+      { arrayFilters: [{ 'elem.ministerio_id': new ObjectId(ministerioId) }] }
+    );
+
+    res.status(200).json({ message: 'Ministério reaberto para edição.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao reabrir ministério.' });
+  }
+}
+
 export async function listarEscalas(req, res) {
   try {
     const db = getDB();
@@ -213,6 +299,13 @@ export async function substituirVoluntarioNaVaga(req, res) {
 
     if (!escala) {
       return res.status(404).json({ error: 'Escala não encontrada.' });
+    }
+
+    const blocoMinisterio = escala.ministerios.find((min) => String(min.ministerio_id) === ministerioId);
+    if (blocoMinisterio && blocoMinisterio.finalizado) {
+      return res.status(400).json({
+        error: 'Este ministério já foi finalizado neste mês. Reabra-o para poder editar as vagas.'
+      });
     }
 
     const hoje = new Date().toISOString().slice(0, 10);
@@ -246,36 +339,5 @@ export async function substituirVoluntarioNaVaga(req, res) {
     res.status(200).json({ message: 'Vaga atualizada com sucesso.' });
   } catch (error) {
     res.status(500).json({ error: 'Erro ao substituir voluntário na vaga.' });
-  }
-}
-
-export async function finalizarEscala(req, res) {
-  try {
-    const { escalaId } = req.params;
-    const db = getDB();
-    const escala = await db.collection('escalas').findOne({ _id: new ObjectId(escalaId) });
-
-    if (!escala) {
-      return res.status(404).json({ error: 'Escala não encontrada.' });
-    }
-
-    const existeVagaAberta = escala.ministerios.some((min) =>
-      min.vagas_preenchidas.some((vaga) => vaga.nome === 'VAGO')
-    );
-
-    if (existeVagaAberta) {
-      return res.status(400).json({
-        error: 'Não é possível finalizar: ainda existem vagas em aberto (VAGO) nesta escala.'
-      });
-    }
-
-    await db.collection('escalas').updateOne(
-      { _id: new ObjectId(escalaId) },
-      { $set: { status: 'finalizada', finalizado_em: new Date() } }
-    );
-
-    res.status(200).json({ message: 'Escala finalizada com sucesso.' });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao finalizar escala.' });
   }
 }

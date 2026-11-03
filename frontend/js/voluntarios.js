@@ -1,292 +1,232 @@
-// Atende RF01 (CRUD de Voluntários) via Fetch API
-// Usado apenas na página voluntarios.html
-// Inclui: select de ministério (puxado do banco) e calendário visual
-// para seleção de datas de restrição (RN05).
+let todosMinisterios = [];
+let todosVoluntarios = [];
 
-const formVoluntario = document.getElementById('form-voluntario');
-const listaVoluntarios = document.getElementById('lista-voluntarios');
-const volCancelarBtn = document.getElementById('vol-cancelar');
-const volMinisterioSelect = document.getElementById('vol-ministerio');
+document.addEventListener('DOMContentLoaded', () => {
+    carregarMinisterios();
+    carregarVoluntarios();
 
-const calMesAnteriorBtn = document.getElementById('cal-mes-anterior');
-const calMesSeguinteBtn = document.getElementById('cal-mes-seguinte');
-const calMesAnoLabel = document.getElementById('cal-mes-ano-label');
-const calendarioGrid = document.getElementById('calendario-grid');
-const restricoesSelecionadasDiv = document.getElementById('restricoes-selecionadas');
-
-const NOMES_MES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-];
-
-let ministeriosCache = [];
-
-const hoje = new Date();
-let calendarioAno = hoje.getFullYear();
-let calendarioMes = hoje.getMonth();
-let datasSelecionadas = new Set();
-
-const showError = (message) => {
-  alert(message);
-};
-
-const fetchJson = async (url, options = {}) => {
-  const response = await fetch(url, options);
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || 'Erro na requisição.');
-  }
-  return data;
-};
-
-const parseCsv = (input) => {
-  return input
-    .split(',')
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
-};
-
-const formatarDataISO = (ano, mes, dia) => {
-  const mesStr = String(mes + 1).padStart(2, '0');
-  const diaStr = String(dia).padStart(2, '0');
-  return `${ano}-${mesStr}-${diaStr}`;
-};
-
-const carregarMinisteriosParaSelect = async () => {
-  try {
-    ministeriosCache = await fetchJson('/api/ministerios');
-
-    volMinisterioSelect.innerHTML =
-      '<option value="">-- Selecione um ministério --</option>' +
-      ministeriosCache.map((min) => `<option value="${min.nome}">${min.nome}</option>`).join('');
-  } catch (error) {
-    showError(error.message);
-  }
-};
-
-function renderizarCalendario() {
-  calMesAnoLabel.textContent = `${NOMES_MES[calendarioMes]} de ${calendarioAno}`;
-
-  const primeiroDiaSemana = new Date(calendarioAno, calendarioMes, 1).getDay();
-  const totalDiasNoMes = new Date(calendarioAno, calendarioMes + 1, 0).getDate();
-
-  let celulas = '';
-
-  for (let i = 0; i < primeiroDiaSemana; i++) {
-    celulas += `<span class="calendario-dia calendario-dia-vazio"></span>`;
-  }
-
-  for (let dia = 1; dia <= totalDiasNoMes; dia++) {
-    const dataISO = formatarDataISO(calendarioAno, calendarioMes, dia);
-    const selecionado = datasSelecionadas.has(dataISO) ? 'calendario-dia-selecionado' : '';
-    celulas += `<button type="button" class="calendario-dia ${selecionado}" data-data="${dataISO}">${dia}</button>`;
-  }
-
-  calendarioGrid.innerHTML = celulas;
-  renderizarListaDeSelecionadas();
-}
-
-function renderizarListaDeSelecionadas() {
-  if (datasSelecionadas.size === 0) {
-    restricoesSelecionadasDiv.innerHTML = '<em>Nenhuma data de restrição selecionada.</em>';
-    return;
-  }
-
-  const datasOrdenadas = Array.from(datasSelecionadas).sort();
-
-  restricoesSelecionadasDiv.innerHTML = datasOrdenadas
-    .map(
-      (data) => `
-        <span class="chip-restricao" data-remover="${data}">
-          ${data} ✕
-        </span>
-      `
-    )
-    .join('');
-}
-
-function handleCalendarioClick(event) {
-  const botaoDia = event.target.closest('button[data-data]');
-  if (!botaoDia) return;
-
-  const data = botaoDia.dataset.data;
-
-  if (datasSelecionadas.has(data)) {
-    datasSelecionadas.delete(data);
-  } else {
-    datasSelecionadas.add(data);
-  }
-
-  renderizarCalendario();
-}
-
-function handleRemoverChipClick(event) {
-  const chip = event.target.closest('span[data-remover]');
-  if (!chip) return;
-
-  datasSelecionadas.delete(chip.dataset.remover);
-  renderizarCalendario();
-}
-
-calMesAnteriorBtn.addEventListener('click', () => {
-  calendarioMes -= 1;
-  if (calendarioMes < 0) {
-    calendarioMes = 11;
-    calendarioAno -= 1;
-  }
-  renderizarCalendario();
+    document.getElementById('form-voluntario').addEventListener('submit', salvarVoluntario);
+    document.getElementById('ministerio').addEventListener('change', () => atualizarFuncoesNaTela());
+    document.getElementById('pesquisa').addEventListener('input', filtrarVoluntarios);
 });
 
-calMesSeguinteBtn.addEventListener('click', () => {
-  calendarioMes += 1;
-  if (calendarioMes > 11) {
-    calendarioMes = 0;
-    calendarioAno += 1;
-  }
-  renderizarCalendario();
-});
+async function carregarMinisterios() {
+    try {
+        const response = await fetch('/api/ministerios');
+        todosMinisterios = await response.json();
+        
+        const select = document.getElementById('ministerio');
+        select.innerHTML = '<option value="">-- Selecione um ministério --</option>';
+        
+        todosMinisterios.forEach(min => {
+            const option = document.createElement('option');
+            option.value = min.nome; 
+            option.textContent = min.nome;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Erro ao carregar ministérios:', error);
+    }
+}
 
-calendarioGrid.addEventListener('click', handleCalendarioClick);
-restricoesSelecionadasDiv.addEventListener('click', handleRemoverChipClick);
+function atualizarFuncoesNaTela(funcoesPreSelecionadas = []) {
+    const nomeMinisterioSelecionado = document.getElementById('ministerio').value;
+    const container = document.getElementById('container-funcoes-voluntario');
+    
+    container.innerHTML = '';
 
-const carregarVoluntarios = async () => {
-  try {
-    const voluntarios = await fetchJson('/api/voluntarios');
-    listaVoluntarios.innerHTML = voluntarios
-      .map(
-        (vol) => `
-          <li>
-            <div>
-              <strong>${vol.nome}</strong><br>
-              Ministério: ${Array.isArray(vol.ministerios) ? vol.ministerios.join(', ') : vol.ministerios}<br>
-              Funções: ${Array.isArray(vol.funcoes) ? vol.funcoes.join(', ') : ''}<br>
-              Disponibilidade: ${Array.isArray(vol.disponibilidades) ? vol.disponibilidades.join(', ') : '-'}<br>
-              Restrições: ${Array.isArray(vol.restricoes) && vol.restricoes.length ? vol.restricoes.join(', ') : '-'}
-            </div>
-            <div>
-              <button class="btn" data-editar-vol="${vol._id}" type="button">Editar</button>
-              <button class="btn" data-excluir-vol="${vol._id}" type="button" style="background:#e74c3c; color:white;">Excluir</button>
-            </div>
-          </li>
-        `
-      )
-      .join('');
-  } catch (error) {
-    showError(error.message);
-  }
-};
+    if (!nomeMinisterioSelecionado) {
+        container.innerHTML = '<em style="color: #888;">Selecione um ministério acima para carregar as funções...</em>';
+        return;
+    }
 
-const resetFormVoluntario = () => {
-  formVoluntario.reset();
-  document.getElementById('vol-id').value = '';
-  document.getElementById('titulo-form-voluntario').textContent = 'Cadastrar Voluntário (UC01)';
-  volCancelarBtn.style.display = 'none';
-  datasSelecionadas = new Set();
-  calendarioAno = hoje.getFullYear();
-  calendarioMes = hoje.getMonth();
-  renderizarCalendario();
-};
-
-const handleVoluntarioSubmit = async (event) => {
-  event.preventDefault();
-
-  const id = document.getElementById('vol-id').value;
-  const nome = document.getElementById('vol-nome').value.trim();
-  const ministerio = volMinisterioSelect.value;
-  const funcoes = parseCsv(document.getElementById('vol-funcoes').value);
-  const disponibilidades = parseCsv(document.getElementById('vol-disponibilidade').value);
-  const restricoes = Array.from(datasSelecionadas).sort();
-
-  if (!nome || !ministerio) {
-    return showError('Preencha o nome do voluntário e selecione um ministério.');
-  }
-
-  const payload = {
-    nome,
-    ministerios: [ministerio],
-    funcoes,
-    disponibilidades,
-    restricoes,
-  };
-
-  try {
-    if (id) {
-      await fetchJson(`/api/voluntarios/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      alert('Voluntário atualizado com sucesso!');
+    const ministerio = todosMinisterios.find(m => m.nome === nomeMinisterioSelecionado);
+    
+    if (ministerio && ministerio.funcoes_obrigatorias && ministerio.funcoes_obrigatorias.length > 0) {
+        ministerio.funcoes_obrigatorias.forEach(funcao => {
+            const isChecked = funcoesPreSelecionadas.includes(funcao) ? 'checked' : '';
+            const label = document.createElement('label');
+            label.className = 'checkbox-item';
+            label.innerHTML = `
+                <input type="checkbox" name="funcao_apta" value="${funcao}" ${isChecked}>
+                ${funcao}
+            `;
+            container.appendChild(label);
+        });
     } else {
-      await fetchJson('/api/voluntarios', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      alert('Voluntário cadastrado com sucesso!');
+        container.innerHTML = '<em style="color: red;">Este ministério não possui funções cadastradas. Vá em Cadastrar Ministérios primeiro.</em>';
+    }
+}
+
+async function salvarVoluntario(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('edit-id').value;
+    const nome = document.getElementById('nome').value;
+    const ministerio = document.getElementById('ministerio').value;
+    
+    // Captura as funções marcadas
+    const checkboxesFuncoes = document.querySelectorAll('input[name="funcao_apta"]:checked');
+    const funcoesSelecionadas = Array.from(checkboxesFuncoes).map(cb => cb.value);
+
+    // Captura os dias da semana marcados
+    const checkboxesDias = document.querySelectorAll('input[name="disponibilidade"]:checked');
+    const diasSelecionados = Array.from(checkboxesDias).map(cb => cb.value);
+
+    if (!ministerio) {
+        alert('Selecione um ministério.'); return;
+    }
+    if (funcoesSelecionadas.length === 0) {
+        alert('Selecione pelo menos uma função apta para o voluntário.'); return;
     }
 
-    resetFormVoluntario();
-    await carregarVoluntarios();
-  } catch (error) {
-    showError(error.message);
-  }
-};
-
-const handleListaVoluntariosClick = async (event) => {
-  const btnEditar = event.target.closest('button[data-editar-vol]');
-  const btnExcluir = event.target.closest('button[data-excluir-vol]');
-
-  if (btnEditar) {
-    const id = btnEditar.dataset.editarVol;
-    try {
-      const voluntarios = await fetchJson('/api/voluntarios');
-      const voluntario = voluntarios.find((v) => v._id === id);
-      if (!voluntario) return showError('Voluntário não encontrado.');
-
-      document.getElementById('vol-id').value = voluntario._id;
-      document.getElementById('vol-nome').value = voluntario.nome;
-      volMinisterioSelect.value = (voluntario.ministerios || [])[0] || '';
-      document.getElementById('vol-funcoes').value = (voluntario.funcoes || []).join(', ');
-      document.getElementById('vol-disponibilidade').value = (voluntario.disponibilidades || []).join(', ');
-
-      datasSelecionadas = new Set(voluntario.restricoes || []);
-      if (datasSelecionadas.size > 0) {
-        const primeiraData = Array.from(datasSelecionadas).sort()[0];
-        const [anoStr, mesStr] = primeiraData.split('-');
-        calendarioAno = Number(anoStr);
-        calendarioMes = Number(mesStr) - 1;
-      }
-      renderizarCalendario();
-
-      document.getElementById('titulo-form-voluntario').textContent = 'Editar Voluntário';
-      volCancelarBtn.style.display = 'inline-block';
-      formVoluntario.scrollIntoView({ behavior: 'smooth' });
-    } catch (error) {
-      showError(error.message);
-    }
-    return;
-  }
-
-  if (btnExcluir) {
-    const id = btnExcluir.dataset.excluirVol;
-    if (!confirm('Deseja remover este voluntário?')) return;
+    const voluntarioData = {
+        nome: nome,
+        ministerios: [ministerio], // Salva como array para compatibilidade com o backend
+        funcoes: funcoesSelecionadas,
+        disponibilidades: diasSelecionados, 
+        restricoes: []
+    };
 
     try {
-      await fetchJson(`/api/voluntarios/${id}`, { method: 'DELETE' });
-      await carregarVoluntarios();
+        const url = id ? `/api/voluntarios/${id}` : '/api/voluntarios';
+        const method = id ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(voluntarioData)
+        });
+
+        if (response.ok) {
+            alert(id ? 'Voluntário atualizado!' : 'Voluntário cadastrado!');
+            cancelarEdicao();
+            carregarVoluntarios(); 
+        } else {
+            const data = await response.json();
+            alert(`Erro: ${data.error || 'Falha ao salvar.'}`);
+        }
     } catch (error) {
-      showError(error.message);
+        console.error('Erro ao salvar voluntário:', error);
+        alert('Erro de conexão ao salvar voluntário.');
     }
-  }
-};
+}
 
-formVoluntario.addEventListener('submit', handleVoluntarioSubmit);
-listaVoluntarios.addEventListener('click', handleListaVoluntariosClick);
-volCancelarBtn.addEventListener('click', resetFormVoluntario);
+async function carregarVoluntarios() {
+    const lista = document.getElementById('lista-voluntarios');
+    try {
+        lista.innerHTML = '<em>Carregando voluntários...</em>';
+        const response = await fetch('/api/voluntarios');
+        todosVoluntarios = await response.json();
+        renderizarVoluntarios(todosVoluntarios);
+    } catch (error) {
+        console.error('Erro ao carregar voluntários:', error);
+        lista.innerHTML = '<em style="color: red;">Erro ao carregar voluntários.</em>';
+    }
+}
 
-window.addEventListener('load', () => {
-  carregarMinisteriosParaSelect();
-  carregarVoluntarios();
-  renderizarCalendario();
-});
+function renderizarVoluntarios(voluntarios) {
+    const lista = document.getElementById('lista-voluntarios');
+    lista.innerHTML = '';
+
+    if (voluntarios.length === 0) {
+        lista.innerHTML = '<em>Nenhum voluntário encontrado.</em>';
+        return;
+    }
+
+    voluntarios.forEach(vol => {
+        const minText = (vol.ministerios || []).join(', ');
+        const funcText = (vol.funcoes || []).join(', ');
+        
+        // Se a lista estiver vazia, escreve "Sempre Disponível", se não, junta os dias com vírgula
+        let dispText = (vol.disponibilidades && vol.disponibilidades.length > 0) 
+            ? vol.disponibilidades.join(', ') 
+            : 'Sempre Disponível';
+
+        const div = document.createElement('div');
+        div.className = 'item-lista';
+        div.innerHTML = `
+            <div class="item-info">
+                <div class="item-nome">${vol.nome}</div>
+                <div class="item-detalhes">
+                    <strong>Ministério(s):</strong> ${minText || 'Nenhum'}<br>
+                    <strong>Funções Aptas:</strong> ${funcText || 'Nenhuma'}<br>
+                    <strong>Disponibilidade:</strong> <span style="color:#27ae60;">${dispText}</span>
+                </div>
+            </div>
+            <div class="acoes">
+                <button class="btn-acao" onclick="editarVoluntario('${vol._id}')">Editar</button>
+                <button class="btn-acao btn-excluir" onclick="excluirVoluntario('${vol._id}')">Excluir</button>
+            </div>
+        `;
+        lista.appendChild(div);
+    });
+}
+
+function filtrarVoluntarios(event) {
+    const termo = event.target.value.toLowerCase();
+    const filtrados = todosVoluntarios.filter(vol => {
+        const nome = (vol.nome || '').toLowerCase();
+        const ministerios = (vol.ministerios || []).join(' ').toLowerCase();
+        const funcoes = (vol.funcoes || []).join(' ').toLowerCase();
+        return nome.includes(termo) || ministerios.includes(termo) || funcoes.includes(termo);
+    });
+    renderizarVoluntarios(filtrados);
+}
+
+function editarVoluntario(id) {
+    const vol = todosVoluntarios.find(v => v._id === id);
+    if (!vol) return;
+
+    document.getElementById('edit-id').value = vol._id;
+    document.getElementById('nome').value = vol.nome;
+    
+    const minSelect = document.getElementById('ministerio');
+    if (vol.ministerios && vol.ministerios.length > 0) {
+        minSelect.value = vol.ministerios[0];
+    }
+
+    // Carrega as funções na tela e já marca as que o voluntário possui
+    atualizarFuncoesNaTela(vol.funcoes || []);
+
+    // Marca os dias da semana corretos
+    const checkboxesDias = document.querySelectorAll('input[name="disponibilidade"]');
+    checkboxesDias.forEach(cb => {
+        cb.checked = vol.disponibilidades && vol.disponibilidades.includes(cb.value);
+    });
+
+    document.getElementById('btn-submit').textContent = 'Atualizar Voluntário';
+    document.getElementById('btn-cancelar').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelarEdicao() {
+    document.getElementById('form-voluntario').reset();
+    document.getElementById('edit-id').value = '';
+    
+    // Limpa a tela de funções
+    document.getElementById('container-funcoes-voluntario').innerHTML = '<em style="color: #888;">Selecione um ministério acima para carregar as funções...</em>';
+    
+    // Desmarca todos os dias
+    const checkboxesDias = document.querySelectorAll('input[name="disponibilidade"]');
+    checkboxesDias.forEach(cb => cb.checked = false);
+
+    document.getElementById('btn-submit').textContent = 'Salvar Voluntário';
+    document.getElementById('btn-cancelar').style.display = 'none';
+}
+
+async function excluirVoluntario(id) {
+    if (!confirm('Tem certeza que deseja excluir este voluntário?')) return;
+
+    try {
+        const response = await fetch(`/api/voluntarios/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            alert('Voluntário excluído!');
+            carregarVoluntarios();
+        } else {
+            alert('Erro ao excluir voluntário.');
+        }
+    } catch (error) {
+        alert('Erro de conexão ao excluir.');
+    }
+}

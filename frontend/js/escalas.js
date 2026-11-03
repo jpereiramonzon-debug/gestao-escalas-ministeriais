@@ -1,236 +1,318 @@
-// Atende RF03 (Geração Automática de Escala), RF05 (Formatação de Texto)
-// e RF06 (Redirecionamento Nativo via Protocolo URL do WhatsApp)
+let todosVoluntarios = [];
+let cultosAtuais = []; // Variável para guardar os cultos na memória e facilitar o filtro
 
-const escalaAnoInput = document.getElementById('escala-ano');
-const escalaMesSelect = document.getElementById('escala-mes');
-const carregarStatusBtn = document.getElementById('carregar-status-btn');
-const listaStatusMinisterios = document.getElementById('lista-status-ministerios');
-const visualizacaoEscala = document.getElementById('visualizacao-escala');
-const enviarWhatsappBtn = document.getElementById('enviar-whatsapp-btn');
-const copiarTextoBtn = document.getElementById('copiar-texto-btn');
+document.addEventListener('DOMContentLoaded', () => {
+    carregarMinisteriosParaEscala();
+    carregarVoluntarios(); 
+    carregarEscalas();
 
-// Guarda em memória a última escala carregada, para poder formatar e
-// enviar para o WhatsApp sem precisar buscar tudo de novo no servidor.
-let escalaDoMesCache = [];
+    // Sempre que trocar o ministério no select, filtra a tabela automaticamente
+    document.getElementById('select-ministerio-gerar').addEventListener('change', renderizarTabelaEscalas);
+    
+    // Sempre que mudar o ano ou mês, busca os dados novamente
+    document.getElementById('input-ano').addEventListener('change', carregarEscalas);
+    document.getElementById('input-mes').addEventListener('change', carregarEscalas);
+});
 
-const NOMES_MES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-];
-
-const showError = (message) => {
-  alert(message);
-};
-
-const fetchJson = async (url, options = {}) => {
-  const response = await fetch(url, options);
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || 'Erro na requisição.');
-  }
-  return data;
-};
-
-const carregarStatusDoMes = async () => {
-  const ano = escalaAnoInput.value;
-  const mes = escalaMesSelect.value;
-
-  if (!ano || !mes) {
-    return showError('Informe o ano e o mês.');
-  }
-
-  try {
-    const status = await fetchJson(`/api/escalas/mes/${ano}/${mes}/status`);
-
-    listaStatusMinisterios.innerHTML = status.ministerios
-      .map((min) => {
-        if (min.processado) {
-          return `
-            <li>
-              <div><strong>${min.nome}</strong> — ✅ Escala gerada</div>
-              <div>
-                <button class="btn" data-desfazer-min="${min._id}" type="button">Desfazer</button>
-              </div>
-            </li>
-          `;
+async function carregarVoluntarios() {
+    try {
+        const response = await fetch('/api/voluntarios');
+        if (response.ok) {
+            todosVoluntarios = await response.json();
         }
-        return `
-          <li>
-            <div><strong>${min.nome}</strong> — ⏳ Pendente</div>
-            <div>
-              <button class="btn btn-primary" data-gerar-min="${min._id}" type="button">Gerar Escala Deste Ministério</button>
-            </div>
-          </li>
-        `;
-      })
-      .join('');
+    } catch (error) {
+        console.error('Erro ao carregar voluntários:', error);
+    }
+}
 
-    await visualizarEscalaDoMes();
-  } catch (error) {
-    showError(error.message);
-  }
-};
+async function carregarMinisteriosParaEscala() {
+    try {
+        const response = await fetch('/api/ministerios');
+        const ministerios = await response.json();
+        const select = document.getElementById('select-ministerio-gerar');
+        
+        select.innerHTML = '<option value="">-- Todos os Ministérios --</option>';
+        
+        ministerios.forEach(min => {
+            const option = document.createElement('option');
+            option.value = min._id; 
+            option.textContent = min.nome;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Erro ao carregar ministérios:', error);
+    }
+}
 
-const gerarEscalaDoMinisterio = async (ministerioId) => {
-  const ano = escalaAnoInput.value;
-  const mes = escalaMesSelect.value;
+async function gerarEscala() {
+    const ministerioId = document.getElementById('select-ministerio-gerar').value;
+    const ano = document.getElementById('input-ano').value;
+    const mes = document.getElementById('input-mes').value;
+    
+    if (!ministerioId || !ano || !mes) {
+        alert('Por favor, preencha o ano, mês e selecione um ministério.');
+        return;
+    }
 
-  try {
-    await fetchJson('/api/escalas/gerar-ministerio', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ano: Number(ano), mes: Number(mes), ministerio_id: ministerioId }),
+    try {
+        const response = await fetch('/api/escalas/gerar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ano: Number(ano), mes: Number(mes), ministerio_id: ministerioId })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert(data.message || 'Escala gerada com sucesso!');
+            carregarEscalas(); 
+        } else {
+            alert(`Erro: ${data.error || 'Não foi possível gerar'}`);
+        }
+    } catch (error) {
+        console.error('Erro ao gerar escala:', error);
+        alert(`Erro de conexão ao tentar gerar a escala.`);
+    }
+}
+
+function formatarDataParaExtenso(dataString) {
+    if (!dataString) return '';
+    const partes = dataString.split('-'); 
+    if (partes.length !== 3) return dataString;
+
+    const dataObj = new Date(partes[0], partes[1] - 1, partes[2]);
+    const dia = String(dataObj.getDate()).padStart(2, '0');
+    const meses = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+    const mes = meses[dataObj.getMonth()];
+    const diasSemana = ['DOMINGO', 'SEGUNDA', 'TERÇA', 'QUARTA', 'QUINTA', 'SEXTA', 'SÁBADO'];
+    const diaSemana = diasSemana[dataObj.getDay()];
+
+    return `${dia} ${mes} ${diaSemana}`;
+}
+
+async function carregarEscalas() {
+    try {
+        const ano = document.getElementById('input-ano').value;
+        const mes = document.getElementById('input-mes').value;
+        
+        const response = await fetch(`/api/escalas?ano=${ano}&mes=${mes}`);
+        cultosAtuais = await response.json(); // Guarda os dados na memória
+        
+        renderizarTabelaEscalas(); // Desenha a tabela com os filtros aplicados
+    } catch (error) {
+        console.error('Erro ao carregar escalas:', error);
+    }
+}
+
+// Nova função apenas para desenhar e filtrar a tabela
+function renderizarTabelaEscalas() {
+    const tbody = document.getElementById('tbody-escalas');
+    tbody.innerHTML = '';
+    
+    // Pega o ministério que está selecionado na caixinha
+    const ministerioSelecionado = document.getElementById('select-ministerio-gerar').value;
+    const ministeriosDoMes = new Map();
+
+    cultosAtuais.forEach(culto => {
+        const dataFormatada = formatarDataParaExtenso(culto.data_culto);
+        const dataHorario = `${dataFormatada} às ${culto.horario}`;
+
+        if (culto.ministerios && culto.ministerios.length > 0) {
+            culto.ministerios.forEach(min => {
+                
+                // FILTRO MÁGICO: Se houver um ministério selecionado e não for este, pula a linha!
+                if (ministerioSelecionado && min.ministerio_id !== ministerioSelecionado) {
+                    return; 
+                }
+                
+                // Guarda o ministério para o painel de ações no final
+                if (!ministeriosDoMes.has(min.ministerio_id)) {
+                    ministeriosDoMes.set(min.ministerio_id, {
+                        nome: min.ministerio_nome,
+                        finalizado: min.finalizado
+                    });
+                }
+
+                const tr = document.createElement('tr');
+                let htmlVagas = '<div style="display:flex; flex-direction:column;">';
+                
+                min.vagas_preenchidas.forEach(vaga => {
+                    const styleVago = vaga.nome === 'VAGO' ? 'color: red; font-weight: bold;' : '';
+                    
+                    htmlVagas += `
+                        <div class="vaga-item">
+                            <span><strong>${vaga.funcao}:</strong> <span style="${styleVago}">${vaga.nome}</span></span>
+                            <button class="btn-editar" onclick="abrirModalEditar('${culto._id}', '${min.ministerio_id}', '${vaga.funcao}', '${vaga.nome}', '${dataHorario}')">✏️ Editar</button>
+                        </div>
+                    `;
+                });
+                htmlVagas += '</div>';
+
+                const statusTxt = min.finalizado 
+                    ? '<span style="color:green; font-weight:bold;">✅ Salva</span>' 
+                    : '<span style="color:#f39c12; font-weight:bold;">⚠️ Rascunho</span>';
+
+                tr.innerHTML = `
+                    <td style="vertical-align: middle; text-align: center;">${dataHorario}</td>
+                    <td style="vertical-align: middle; text-align: center;"><strong>${min.ministerio_nome}</strong></td>
+                    <td>${htmlVagas}</td>
+                    <td style="vertical-align: middle; text-align: center;">${statusTxt}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
     });
 
-    await carregarStatusDoMes();
-  } catch (error) {
-    showError(error.message);
-  }
-};
+    renderizarPainelAcoes(ministeriosDoMes);
+}
 
-const desfazerEscalaDoMinisterio = async (ministerioId) => {
-  const ano = escalaAnoInput.value;
-  const mes = escalaMesSelect.value;
+function renderizarPainelAcoes(ministeriosDoMes) {
+    const painel = document.getElementById('painel-acoes');
+    const listaAcoes = document.getElementById('lista-acoes-mes');
+    listaAcoes.innerHTML = '';
 
-  if (!confirm('Isso vai apagar as vagas geradas deste ministério neste mês. Continuar?')) return;
-
-  try {
-    await fetchJson(`/api/escalas/mes/${ano}/${mes}/ministerio/${ministerioId}`, { method: 'DELETE' });
-    await carregarStatusDoMes();
-  } catch (error) {
-    showError(error.message);
-  }
-};
-
-const handleListaStatusClick = (event) => {
-  const btnGerar = event.target.closest('button[data-gerar-min]');
-  const btnDesfazer = event.target.closest('button[data-desfazer-min]');
-
-  if (btnGerar) {
-    gerarEscalaDoMinisterio(btnGerar.dataset.gerarMin);
-  }
-  if (btnDesfazer) {
-    desfazerEscalaDoMinisterio(btnDesfazer.dataset.desfazerMin);
-  }
-};
-
-const visualizarEscalaDoMes = async () => {
-  const ano = escalaAnoInput.value;
-  const mes = escalaMesSelect.value;
-
-  try {
-    const escalas = await fetchJson(`/api/escalas?ano=${ano}&mes=${mes}`);
-    escalaDoMesCache = escalas;
-
-    if (escalas.length === 0) {
-      visualizacaoEscala.innerHTML = '<p>Nenhum culto gerado ainda para este mês.</p>';
-      return;
+    if (ministeriosDoMes.size === 0) {
+        painel.style.display = 'none';
+        return;
     }
 
-    visualizacaoEscala.innerHTML = escalas
-      .map((culto) => {
-        const blocosMinisterios = culto.ministerios.length
-          ? culto.ministerios
-              .map(
-                (min) => `
-                  <div style="margin-top:0.5rem;">
-                    <strong>${min.ministerio_nome}</strong>
-                    <ul style="margin:0.25rem 0 0; padding-left:1.2rem;">
-                      ${min.vagas_preenchidas
-                        .map(
-                          (vaga) =>
-                            `<li style="${vaga.nome === 'VAGO' ? 'color:#b3261e;font-weight:600;' : ''}">${vaga.funcao}: ${vaga.nome}</li>`
-                        )
-                        .join('')}
-                    </ul>
-                  </div>
-                `
-              )
-              .join('')
-          : '<p style="color:#6b6579;">Nenhum ministério gerado ainda para este culto.</p>';
+    painel.style.display = 'block';
 
-        return `
-          <li style="flex-direction:column; align-items:stretch;">
-            <div><strong>${culto.dia_semana}, ${culto.data_culto} às ${culto.horario}</strong> — status: ${culto.status}</div>
-            ${blocosMinisterios}
-          </li>
+    ministeriosDoMes.forEach((dados, id) => {
+        const div = document.createElement('div');
+        div.className = 'linha-acao';
+        
+        let statusHtml = dados.finalizado 
+            ? '<span style="color:green; font-weight:bold; margin-right:15px;">Status: ✅ Salva</span>' 
+            : '<span style="color:#f39c12; font-weight:bold; margin-right:15px;">Status: ⚠️ Rascunho</span>';
+        
+        let botaoHtml = dados.finalizado
+            ? `<button class="btn-reabrir" onclick="reabrirMinisterioEscala('${id}')">🔓 Desbloquear Edição</button>`
+            : `<button class="btn-salvar-mes" onclick="finalizarMinisterioEscala('${id}')">💾 Salvar Escala do Mês</button>`;
+
+        div.innerHTML = `
+            <div style="font-size: 16px;"><strong>${dados.nome}</strong></div>
+            <div>${statusHtml} ${botaoHtml}</div>
         `;
-      })
-      .join('');
-  } catch (error) {
-    showError(error.message);
-  }
-};
+        listaAcoes.appendChild(div);
+    });
+}
 
-// RF05 - Formatação Estruturada de Texto: converte a escala em memória
-// numa string limpa, com negrito e quebras de linha no padrão do WhatsApp
-// (asterisco = negrito no WhatsApp).
-function formatarEscalaParaTexto() {
-  const ano = escalaAnoInput.value;
-  const mes = Number(escalaMesSelect.value);
-  const nomeMes = NOMES_MES[mes - 1];
-
-  if (escalaDoMesCache.length === 0) {
-    return null;
-  }
-
-  let texto = `*Escala Ministerial - ${nomeMes}/${ano}*\n`;
-  texto += `_Portal IEQ - Gestão de Escalas_\n\n`;
-
-  escalaDoMesCache.forEach((culto) => {
-    texto += `*${culto.dia_semana}, ${culto.data_culto} às ${culto.horario}*\n`;
-
-    if (culto.ministerios.length === 0) {
-      texto += `_(nenhum ministério gerado ainda)_\n`;
-    } else {
-      culto.ministerios.forEach((min) => {
-        texto += `_${min.ministerio_nome}_\n`;
-        min.vagas_preenchidas.forEach((vaga) => {
-          texto += `• ${vaga.funcao}: ${vaga.nome}\n`;
+async function finalizarMinisterioEscala(ministerioId) {
+    const ano = document.getElementById('input-ano').value;
+    const mes = document.getElementById('input-mes').value;
+    
+    try {
+        const response = await fetch(`/api/escalas/mes/${ano}/${mes}/ministerio/${ministerioId}/finalizar`, {
+            method: 'POST'
         });
-      });
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert('Escala do ministério salva com sucesso para este mês!');
+            carregarEscalas();
+        } else {
+            alert(`Atenção: ${data.error}`);
+        }
+    } catch (error) {
+        alert('Erro ao tentar salvar a escala.');
+    }
+}
+
+async function reabrirMinisterioEscala(ministerioId) {
+    const ano = document.getElementById('input-ano').value;
+    const mes = document.getElementById('input-mes').value;
+    
+    try {
+        const response = await fetch(`/api/escalas/mes/${ano}/${mes}/ministerio/${ministerioId}/reabrir`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            alert('Escala desbloqueada para edições!');
+            carregarEscalas();
+        }
+    } catch (error) {
+        alert('Erro ao desbloquear escala.');
+    }
+}
+
+function abrirModalEditar(escalaId, ministerioId, funcao, nomeAtual, dataHorario) {
+    document.getElementById('edit-escala-id').value = escalaId;
+    document.getElementById('edit-ministerio-id').value = ministerioId;
+    document.getElementById('edit-funcao').value = funcao;
+    
+    document.getElementById('edit-info').innerHTML = 
+        `<strong>Data:</strong> ${dataHorario}<br>
+         <strong>Função:</strong> ${funcao}<br>
+         <strong>Escalado Atual:</strong> <span style="color:blue;">${nomeAtual}</span>`;
+    
+    const select = document.getElementById('select-novo-voluntario');
+    select.innerHTML = ''; 
+    
+    const voluntariosAptos = todosVoluntarios.filter(vol => {
+        return vol.funcoes && vol.funcoes.includes(funcao);
+    });
+
+    if (voluntariosAptos.length === 0) {
+        const option = document.createElement('option');
+        option.value = "";
+        option.textContent = "Nenhum voluntário apto para esta função";
+        select.appendChild(option);
+    } else {
+        voluntariosAptos.forEach(vol => {
+            const option = document.createElement('option');
+            option.value = vol._id;
+            option.textContent = vol.nome;
+            select.appendChild(option);
+        });
     }
 
-    texto += `\n`;
-  });
-
-  return texto;
+    document.getElementById('modal-editar').style.display = 'flex';
 }
 
-// RF06 - Redirecionamento Nativo via Protocolo URL: abre o WhatsApp com o
-// texto já preenchido, deixando o coordenador escolher manualmente o
-// contato ou grupo de destino (Deep Link, sem custo de API paga).
-function enviarParaWhatsapp() {
-  const texto = formatarEscalaParaTexto();
-
-  if (!texto) {
-    return showError('Carregue a escala do mês antes de enviar para o WhatsApp.');
-  }
-
-  const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
-  window.open(url, '_blank');
+function fecharModal() {
+    document.getElementById('modal-editar').style.display = 'none';
 }
 
-// Fluxo alternativo do UC "Emitir Escala Para WhatsApp": caso o
-// redirecionamento não funcione (ex: navegador bloqueando pop-up),
-// o coordenador pode copiar o texto manualmente.
-async function copiarTextoDaEscala() {
-  const texto = formatarEscalaParaTexto();
+async function salvarEdicaoVaga() {
+    const escalaId = document.getElementById('edit-escala-id').value;
+    const ministerioId = document.getElementById('edit-ministerio-id').value;
+    const funcao = document.getElementById('edit-funcao').value;
+    const voluntarioIdSelecionado = document.getElementById('select-novo-voluntario').value;
+    
+    if (!voluntarioIdSelecionado) {
+        alert('É obrigatório selecionar um voluntário. A escala não pode ficar vaga.');
+        return;
+    }
+    
+    let novo_nome = 'VAGO';
+    const volEncontrado = todosVoluntarios.find(v => v._id === voluntarioIdSelecionado);
+    if (volEncontrado) {
+        novo_nome = volEncontrado.nome;
+    }
 
-  if (!texto) {
-    return showError('Carregue a escala do mês antes de copiar o texto.');
-  }
+    try {
+        const response = await fetch(`/api/escalas/${escalaId}/ministerio/${ministerioId}/funcao/${funcao}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                novo_voluntario_id: voluntarioIdSelecionado, 
+                novo_nome: novo_nome, 
+                forcar: true 
+            })
+        });
 
-  try {
-    await navigator.clipboard.writeText(texto);
-    alert('Texto da escala copiado! Já pode colar no WhatsApp.');
-  } catch (error) {
-    showError('Não foi possível copiar automaticamente. Copie manualmente o texto exibido no console (F12).');
-    console.log(texto);
-  }
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('Voluntário atualizado com sucesso!');
+            fecharModal();
+            carregarEscalas(); 
+        } else {
+            alert(`Erro: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Erro ao salvar edição:', error);
+        alert('Erro de conexão ao salvar a edição.');
+    }
 }
-
-carregarStatusBtn.addEventListener('click', carregarStatusDoMes);
-listaStatusMinisterios.addEventListener('click', handleListaStatusClick);
-enviarWhatsappBtn.addEventListener('click', enviarParaWhatsapp);
-copiarTextoBtn.addEventListener('click', copiarTextoDaEscala);
