@@ -9,19 +9,7 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
         .container { max-width: 1000px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* Estilo padronizado para o botão voltar (como na imagem 2) */
-        .btn-voltar {
-            display: block;
-            width: fit-content;
-            margin: 0 auto 20px;
-            padding: 10px 20px;
-            background: white;
-            border: 1px solid #4a235a;
-            border-radius: 4px;
-            text-decoration: none;
-            color: #4a235a;
-            font-weight: 500;
-        }
+        .btn-voltar { display: block; width: fit-content; margin: 0 auto 20px; padding: 10px 20px; background: white; border: 1px solid #4a235a; border-radius: 4px; text-decoration: none; color: #4a235a; font-weight: 500; }
 
         h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         h2 { color: #34495e; margin-top: 30px; }
@@ -45,9 +33,6 @@
         
         .btn-salvar-mes { background-color: #27ae60; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; }
         .btn-salvar-mes:hover { background-color: #219150; }
-        
-        .btn-reabrir { background-color: #e74c3c; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; }
-        .btn-reabrir:hover { background-color: #c0392b; }
 
         .painel-acoes { margin-top: 30px; padding: 20px; background: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 6px; }
         .linha-acao { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
@@ -56,7 +41,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Botão voltar agora está usando a classe padronizada -->
         <a href="index.html" class="btn-voltar">← Voltar ao Menu</a>
         
         <h1>Gerar Escala</h1>
@@ -90,7 +74,6 @@
             </tbody>
         </table>
 
-        <!-- Painel para salvar a escala do mês de cada ministério no final -->
         <div class="painel-acoes" id="painel-acoes" style="display: none;">
             <h3 style="margin-top: 0; color: #2c3e50;">Ações do Mês</h3>
             <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Finalize a escala para travar edições e concluir o mês.</p>
@@ -100,7 +83,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE EDIÇÃO -->
+    <!-- MODAL DE EDIÇÃO DA VAGA -->
     <div id="modal-editar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index: 1000;">
         <div style="background:#fff; padding:25px; border-radius:8px; width:400px; max-width:90%; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
             <h3 style="margin-top:0; color:#2c3e50;">Substituir Voluntário</h3>
@@ -116,6 +99,24 @@
             <div style="display:flex; justify-content:flex-end; gap:10px;">
                 <button onclick="fecharModal()" style="background-color:#95a5a6; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer;">Cancelar</button>
                 <button onclick="salvarEdicaoVaga()" style="background-color:#27ae60; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">Salvar Alteração</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ENVIO WHATSAPP INDIVIDUAL -->
+    <div id="modal-whatsapp" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index: 1000;">
+        <div style="background:#fff; padding:25px; border-radius:8px; width:400px; max-width:90%; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+            <h3 style="margin-top:0; color:#25D366;">Enviar Escala Individual</h3>
+            <p style="color:#555; font-size: 14px; margin-bottom: 15px;">Selecione o voluntário para gerar a mensagem personalizada com as datas exclusivas dele:</p>
+            
+            <select id="select-voluntario-whatsapp" style="width:100%; margin-bottom:20px; padding:10px;"></select>
+            
+            <input type="hidden" id="zap-ministerio-id">
+            <input type="hidden" id="zap-ministerio-nome">
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="fecharModalWhatsApp()" style="background-color:#95a5a6; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer;">Cancelar</button>
+                <button onclick="gerarMensagemWhatsApp()" style="background-color:#25D366; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">Abrir WhatsApp</button>
             </div>
         </div>
     </div>

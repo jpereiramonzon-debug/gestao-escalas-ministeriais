@@ -1,15 +1,12 @@
 let todosVoluntarios = [];
-let cultosAtuais = []; // Variável para guardar os cultos na memória e facilitar o filtro
+let cultosAtuais = []; 
 
 document.addEventListener('DOMContentLoaded', () => {
     carregarMinisteriosParaEscala();
     carregarVoluntarios(); 
     carregarEscalas();
 
-    // Sempre que trocar o ministério no select, filtra a tabela automaticamente
     document.getElementById('select-ministerio-gerar').addEventListener('change', renderizarTabelaEscalas);
-    
-    // Sempre que mudar o ano ou mês, busca os dados novamente
     document.getElementById('input-ano').addEventListener('change', carregarEscalas);
     document.getElementById('input-mes').addEventListener('change', carregarEscalas);
 });
@@ -96,20 +93,18 @@ async function carregarEscalas() {
         const mes = document.getElementById('input-mes').value;
         
         const response = await fetch(`/api/escalas?ano=${ano}&mes=${mes}`);
-        cultosAtuais = await response.json(); // Guarda os dados na memória
+        cultosAtuais = await response.json(); 
         
-        renderizarTabelaEscalas(); // Desenha a tabela com os filtros aplicados
+        renderizarTabelaEscalas(); 
     } catch (error) {
         console.error('Erro ao carregar escalas:', error);
     }
 }
 
-// Nova função apenas para desenhar e filtrar a tabela
 function renderizarTabelaEscalas() {
     const tbody = document.getElementById('tbody-escalas');
     tbody.innerHTML = '';
     
-    // Pega o ministério que está selecionado na caixinha
     const ministerioSelecionado = document.getElementById('select-ministerio-gerar').value;
     const ministeriosDoMes = new Map();
 
@@ -120,12 +115,10 @@ function renderizarTabelaEscalas() {
         if (culto.ministerios && culto.ministerios.length > 0) {
             culto.ministerios.forEach(min => {
                 
-                // FILTRO MÁGICO: Se houver um ministério selecionado e não for este, pula a linha!
                 if (ministerioSelecionado && min.ministerio_id !== ministerioSelecionado) {
                     return; 
                 }
                 
-                // Guarda o ministério para o painel de ações no final
                 if (!ministeriosDoMes.has(min.ministerio_id)) {
                     ministeriosDoMes.set(min.ministerio_id, {
                         nome: min.ministerio_nome,
@@ -139,10 +132,15 @@ function renderizarTabelaEscalas() {
                 min.vagas_preenchidas.forEach(vaga => {
                     const styleVago = vaga.nome === 'VAGO' ? 'color: red; font-weight: bold;' : '';
                     
+                    let btnEditarHtml = '';
+                    if (!min.finalizado) {
+                        btnEditarHtml = `<button class="btn-editar" onclick="abrirModalEditar('${culto._id}', '${min.ministerio_id}', '${vaga.funcao}', '${vaga.nome}', '${dataHorario}')">✏️ Editar</button>`;
+                    }
+                    
                     htmlVagas += `
                         <div class="vaga-item">
                             <span><strong>${vaga.funcao}:</strong> <span style="${styleVago}">${vaga.nome}</span></span>
-                            <button class="btn-editar" onclick="abrirModalEditar('${culto._id}', '${min.ministerio_id}', '${vaga.funcao}', '${vaga.nome}', '${dataHorario}')">✏️ Editar</button>
+                            ${btnEditarHtml}
                         </div>
                     `;
                 });
@@ -186,8 +184,9 @@ function renderizarPainelAcoes(ministeriosDoMes) {
             ? '<span style="color:green; font-weight:bold; margin-right:15px;">Status: ✅ Salva</span>' 
             : '<span style="color:#f39c12; font-weight:bold; margin-right:15px;">Status: ⚠️ Rascunho</span>';
         
+        // MODIFICADO: Chama o Modal para escolher o voluntário
         let botaoHtml = dados.finalizado
-            ? `<button class="btn-reabrir" onclick="reabrirMinisterioEscala('${id}')">🔓 Desbloquear Edição</button>`
+            ? `<button style="background-color:#25D366; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:13px;" onclick="abrirModalWhatsApp('${id}', '${dados.nome}')">📲 WhatsApp (Individual)</button>`
             : `<button class="btn-salvar-mes" onclick="finalizarMinisterioEscala('${id}')">💾 Salvar Escala do Mês</button>`;
 
         div.innerHTML = `
@@ -198,6 +197,94 @@ function renderizarPainelAcoes(ministeriosDoMes) {
     });
 }
 
+// === LÓGICA DO WHATSAPP INDIVIDUAL ===
+function abrirModalWhatsApp(ministerioId, nomeMinisterio) {
+    document.getElementById('zap-ministerio-id').value = ministerioId;
+    document.getElementById('zap-ministerio-nome').value = nomeMinisterio;
+    
+    const select = document.getElementById('select-voluntario-whatsapp');
+    select.innerHTML = '<option value="">-- Selecione o Voluntário --</option>';
+    
+    // Busca na memória quais voluntários realmente têm vaga neste ministério
+    const voluntariosEscalados = new Map();
+    
+    cultosAtuais.forEach(culto => {
+        const bloco = culto.ministerios.find(m => String(m.ministerio_id) === String(ministerioId));
+        if (bloco) {
+            bloco.vagas_preenchidas.forEach(vaga => {
+                if (vaga.voluntario_id && vaga.nome !== 'VAGO') {
+                    voluntariosEscalados.set(String(vaga.voluntario_id), vaga.nome);
+                }
+            });
+        }
+    });
+    
+    if (voluntariosEscalados.size === 0) {
+        alert('Nenhum voluntário escalado neste ministério (todas as vagas estão livres).');
+        return;
+    }
+    
+    // Popula o dropdown apenas com as pessoas que tiraram escala
+    voluntariosEscalados.forEach((nome, id) => {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = nome;
+        select.appendChild(option);
+    });
+    
+    document.getElementById('modal-whatsapp').style.display = 'flex';
+}
+
+function fecharModalWhatsApp() {
+    document.getElementById('modal-whatsapp').style.display = 'none';
+}
+
+function gerarMensagemWhatsApp() {
+    const select = document.getElementById('select-voluntario-whatsapp');
+    const voluntarioId = select.value;
+    const voluntarioNome = select.options[select.selectedIndex]?.textContent;
+    const ministerioId = document.getElementById('zap-ministerio-id').value;
+    const nomeMinisterio = document.getElementById('zap-ministerio-nome').value;
+    const mesAtual = document.getElementById('input-mes').value;
+    const anoAtual = document.getElementById('input-ano').value;
+    
+    if (!voluntarioId) {
+        alert('Por favor, selecione um voluntário na lista.');
+        return;
+    }
+    
+    let mensagem = `Olá *${voluntarioNome}*! 👋\n\nSegue a sua escala exclusiva para o ministério *${nomeMinisterio.toUpperCase()}* (${mesAtual}/${anoAtual}):\n\n`;
+    
+    let encontrouVagas = false;
+    
+    cultosAtuais.forEach(culto => {
+        const bloco = culto.ministerios.find(m => String(m.ministerio_id) === String(ministerioId));
+        if (bloco) {
+            // Procura se ESSE voluntário foi escalado neste culto específico
+            const vagasDoVoluntario = bloco.vagas_preenchidas.filter(v => String(v.voluntario_id) === String(voluntarioId));
+            
+            if (vagasDoVoluntario.length > 0) {
+                encontrouVagas = true;
+                const dataFormatada = formatarDataParaExtenso(culto.data_culto);
+                mensagem += `🗓️ *${dataFormatada} às ${culto.horario}*\n`;
+                vagasDoVoluntario.forEach(v => {
+                    mensagem += `   🔹 Função: ${v.funcao}\n`;
+                });
+                mensagem += `\n`; // Quebra de linha entre os dias
+            }
+        }
+    });
+    
+    mensagem += `Deus te abençoe! 🙏`;
+    
+    // Abre o zap zap
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
+    window.open(url, '_blank');
+    
+    fecharModalWhatsApp();
+}
+// =====================================
+
 async function finalizarMinisterioEscala(ministerioId) {
     const ano = document.getElementById('input-ano').value;
     const mes = document.getElementById('input-mes').value;
@@ -206,7 +293,15 @@ async function finalizarMinisterioEscala(ministerioId) {
         const response = await fetch(`/api/escalas/mes/${ano}/${mes}/ministerio/${ministerioId}/finalizar`, {
             method: 'POST'
         });
-        const data = await response.json();
+        
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            alert(`ERRO ${response.status}: A rota de salvar não foi encontrada. REINICIE o seu servidor Node.js (CTRL+C e npm start).`);
+            return;
+        }
         
         if (response.ok) {
             alert('Escala do ministério salva com sucesso para este mês!');
@@ -215,24 +310,7 @@ async function finalizarMinisterioEscala(ministerioId) {
             alert(`Atenção: ${data.error}`);
         }
     } catch (error) {
-        alert('Erro ao tentar salvar a escala.');
-    }
-}
-
-async function reabrirMinisterioEscala(ministerioId) {
-    const ano = document.getElementById('input-ano').value;
-    const mes = document.getElementById('input-mes').value;
-    
-    try {
-        const response = await fetch(`/api/escalas/mes/${ano}/${mes}/ministerio/${ministerioId}/reabrir`, {
-            method: 'POST'
-        });
-        if (response.ok) {
-            alert('Escala desbloqueada para edições!');
-            carregarEscalas();
-        }
-    } catch (error) {
-        alert('Erro ao desbloquear escala.');
+        alert(`Erro de conexão ao tentar salvar: ${error.message}`);
     }
 }
 
@@ -302,7 +380,14 @@ async function salvarEdicaoVaga() {
             })
         });
 
-        const data = await response.json();
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            alert(`Erro ${response.status}: A rota não foi encontrada.`);
+            return;
+        }
 
         if (response.ok) {
             alert('Voluntário atualizado com sucesso!');
