@@ -2,19 +2,30 @@
 // Funcionais RF03/RF04, aplicando as Regras de Negócio RN01 a RN05.
 import { getDB } from '../config/db.js';
 import { ObjectId } from 'mongodb';
-import { gerarCultosDoMes, identificadorDisponibilidade } from '../utils/cultos.js';
+import { gerarCultosDoMes } from '../utils/cultos.js';
 
 function possuiRestricao(voluntario, dataCulto) {
   return (voluntario.restricoes || []).includes(dataCulto);
 }
 
+// Compara textos ignorando maiúsculas e acentos ("TERÇA" = "Terça" = "terca").
+const semAcento = (texto) =>
+  String(texto || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+// RN02: o voluntário marca os DIAS DA SEMANA em que pode servir (ex.: "Terça"
+// vale para todas as terças). Voluntário sem nenhum dia marcado é tratado
+// como sempre disponível. O domingo cobre os dois cultos do dia (19h30 e o
+// das 10h do primeiro domingo do mês).
 function estaDisponivel(voluntario, culto) {
-  // CORREÇÃO: Se o voluntário não preencheu disponibilidades específicas, assumimos que está sempre disponível.
   if (!voluntario.disponibilidades || voluntario.disponibilidades.length === 0) {
-      return true; 
+    return true;
   }
-  const identificador = identificadorDisponibilidade(culto);
-  return voluntario.disponibilidades.includes(identificador);
+  const diaDoCulto = semAcento(culto.diaSemana);
+  return voluntario.disponibilidades.some((dia) => semAcento(dia) === diaDoCulto);
 }
 
 function escolherPorEquidade(candidatos, contagemDeEscalas) {

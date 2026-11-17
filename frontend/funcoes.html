@@ -1,41 +1,62 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal IEQ - Funções</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Funções</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .btn-voltar { display: block; width: fit-content; margin: 0 auto 20px; padding: 10px 20px; background: white; border: 1px solid #4a235a; border-radius: 4px; text-decoration: none; color: #4a235a; font-weight: 500; }
+        .card { background: #ffffff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { color: #4a235a; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        
+        .btn-salvar { background-color: #5b2c6f; color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px; width: 100%; margin-top: 10px; transition: 0.2s; }
+        .btn-salvar:hover { background-color: #4a235a; }
+        
+        /* Padrão visual padronizado */
+        .item-lista { display: flex; justify-content: space-between; align-items: center; border: 1px solid #ddd; padding: 15px; border-radius: 6px; margin-bottom: 10px; background: #f9f9f9; }
+        .item-info { flex: 1; font-weight: bold; color: #4a235a; font-size: 1.1em; }
+        
+        .acoes { display: flex; gap: 10px; }
+        .btn-acao { background: white; border: 1px solid #ccc; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; color: #333; transition: 0.2s; font-weight: 500;}
+        .btn-acao:hover { background: #eee; }
+        .btn-excluir { border-color: #e74c3c; color: white; background: #e74c3c; }
+        .btn-excluir:hover { background: #c0392b; border-color: #c0392b; }
+    </style>
 </head>
 <body>
-  <header class="header">
-    <h1>Portal IEQ - Funções</h1>
-    <p>Painel Administrativo do Coordenador Ministerial</p>
-  </header>
+    <div class="container">
+        <a href="index.html" class="btn-voltar">← Voltar ao Menu</a>
 
-  <main class="container">
-    <section class="card nav-card">
-      <a href="index.html" class="btn btn-nav">← Voltar ao Menu</a>
-    </section>
-
-    <section class="card">
-      <h2 id="titulo-form-funcao">Cadastrar Função</h2>
-      <form id="form-funcao">
-        <input type="hidden" id="func-id" value="">
-        <div class="form-group">
-          <label>Nome da Função:</label>
-          <input type="text" id="func-nome" required placeholder="Ex: Baixista, Baterista, Operador de Áudio">
+        <div class="card">
+            <h2>Cadastrar Função</h2>
+            <form id="form-funcao">
+                <input type="hidden" id="edit-id">
+                <div class="form-group">
+                    <label for="nome">Nome da Função:</label>
+                    <input type="text" id="nome" placeholder="Ex: Baixista, Baterista, Operador de Áudio" required>
+                </div>
+                <button type="submit" class="btn-salvar" id="btn-submit">Salvar Função</button>
+                <button type="button" class="btn-acao" id="btn-cancelar" style="display:none; width:100%; margin-top:10px;" onclick="cancelarEdicao()">Cancelar Edição</button>
+            </form>
         </div>
-        <button type="submit" class="btn btn-primary">Salvar Função</button>
-        <button type="button" id="func-cancelar" class="btn" style="display:none;">Cancelar edição</button>
-      </form>
-    </section>
 
-    <section class="card">
-      <h2>Funções Cadastradas</h2>
-      <ul id="lista-funcoes" class="lista"></ul>
-    </section>
-  </main>
-
-  <script src="js/funcoes.js"></script>
+        <div class="card">
+            <h2>Funções Cadastradas</h2>
+            <div class="form-group">
+                <input type="text" id="pesquisa" placeholder="Pesquisar por função...">
+            </div>
+            <div id="lista-funcoes">
+                <!-- Lista injetada pelo JS -->
+            </div>
+        </div>
+    </div>
+    <script src="js/comum.js"></script>
+    <script src="js/funcoes.js"></script>
 </body>
 </html>

@@ -379,3 +379,97 @@ body {
     max-width: 100%;
   }
 }
+
+/* ===== Mensagens do sistema (comum.js) ===== */
+#avisos {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(420px, calc(100vw - 32px));
+  pointer-events: none; /* o espaço vazio do container não bloqueia cliques na tela */
+}
+
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-left: 5px solid var(--cor-primaria);
+  border-radius: var(--raio);
+  box-shadow: 0 6px 20px rgba(36, 31, 46, 0.18);
+  width: 100%;
+  pointer-events: auto;
+  animation: aviso-entrada 0.2s ease-out;
+}
+
+.aviso-sucesso { border-left-color: var(--cor-sucesso); }
+.aviso-erro { border-left-color: var(--cor-perigo); background: var(--cor-perigo-fundo); }
+.aviso-aviso { border-left-color: var(--cor-acento); }
+
+.aviso-icone { font-weight: bold; line-height: 1.5; }
+.aviso-sucesso .aviso-icone { color: var(--cor-sucesso); }
+.aviso-erro .aviso-icone { color: var(--cor-perigo); }
+.aviso-aviso .aviso-icone { color: var(--cor-acento); }
+
+.aviso-texto { flex: 1; color: var(--cor-texto); word-break: break-word; }
+
+.aviso-fechar {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--cor-texto-suave);
+  padding: 0 2px;
+}
+
+.aviso-saindo { opacity: 0; transform: scale(0.95); transition: all 0.2s; }
+
+@keyframes aviso-entrada {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+
+.dialogo-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(36, 31, 46, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100;
+  padding: 16px;
+}
+
+.dialogo {
+  background: var(--cor-superficie);
+  border-radius: var(--raio);
+  box-shadow: 0 12px 40px rgba(36, 31, 46, 0.35);
+  padding: 22px 24px;
+  width: min(420px, 100%);
+}
+
+.dialogo h3 { margin: 0 0 8px; color: var(--cor-primaria-escura); }
+.dialogo p { margin: 0 0 20px; color: var(--cor-texto); }
+.dialogo-acoes { display: flex; justify-content: flex-end; gap: 10px; }
+
+.dialogo-btn {
+  padding: 9px 18px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dialogo-cancelar { background: var(--cor-superficie); border-color: var(--cor-borda); color: var(--cor-texto); }
+.dialogo-ok { background: var(--cor-primaria); color: #fff; }
+.dialogo-perigo { background: var(--cor-perigo); color: #fff; }
+.dialogo-btn:focus-visible { outline: 3px solid var(--cor-acento); outline-offset: 2px; }

@@ -6,16 +6,22 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarVoluntarios(); 
     carregarEscalas();
 
-    document.getElementById('select-ministerio-gerar').addEventListener('change', renderizarTabelaEscalas);
-    document.getElementById('input-ano').addEventListener('change', carregarEscalas);
-    document.getElementById('input-mes').addEventListener('change', carregarEscalas);
+    const selectMin = document.getElementById('select-ministerio-gerar');
+    if (selectMin) selectMin.addEventListener('change', renderizarTabelaEscalas);
+    
+    const inputAno = document.getElementById('input-ano');
+    if (inputAno) inputAno.addEventListener('change', carregarEscalas);
+    
+    const inputMes = document.getElementById('input-mes');
+    if (inputMes) inputMes.addEventListener('change', carregarEscalas);
 });
 
 async function carregarVoluntarios() {
     try {
         const response = await fetch('/api/voluntarios');
         if (response.ok) {
-            todosVoluntarios = await response.json();
+            const data = await response.json();
+            todosVoluntarios = Array.isArray(data) ? data : [];
         }
     } catch (error) {
         console.error('Erro ao carregar voluntários:', error);
@@ -25,10 +31,14 @@ async function carregarVoluntarios() {
 async function carregarMinisteriosParaEscala() {
     try {
         const response = await fetch('/api/ministerios');
-        const ministerios = await response.json();
+        const data = await response.json();
+        
         const select = document.getElementById('select-ministerio-gerar');
+        if (!select) return;
         
         select.innerHTML = '<option value="">-- Todos os Ministérios --</option>';
+        
+        const ministerios = Array.isArray(data) ? data : [];
         
         ministerios.forEach(min => {
             const option = document.createElement('option');
@@ -38,13 +48,21 @@ async function carregarMinisteriosParaEscala() {
         });
     } catch (error) {
         console.error('Erro ao carregar ministérios:', error);
+        const select = document.getElementById('select-ministerio-gerar');
+        if(select) select.innerHTML = '<option value="">Erro ao carregar</option>';
     }
 }
 
 async function gerarEscala() {
-    const ministerioId = document.getElementById('select-ministerio-gerar').value;
-    const ano = document.getElementById('input-ano').value;
-    const mes = document.getElementById('input-mes').value;
+    const select = document.getElementById('select-ministerio-gerar');
+    const inputAno = document.getElementById('input-ano');
+    const inputMes = document.getElementById('input-mes');
+    
+    if (!select || !inputAno || !inputMes) return;
+    
+    const ministerioId = select.value;
+    const ano = inputAno.value;
+    const mes = inputMes.value;
     
     if (!ministerioId || !ano || !mes) {
         alert('Por favor, preencha o ano, mês e selecione um ministério.');
@@ -89,12 +107,13 @@ function formatarDataParaExtenso(dataString) {
 
 async function carregarEscalas() {
     try {
-        const ano = document.getElementById('input-ano').value;
-        const mes = document.getElementById('input-mes').value;
+        const ano = document.getElementById('input-ano')?.value || new Date().getFullYear();
+        const mes = document.getElementById('input-mes')?.value || (new Date().getMonth() + 1);
         
         const response = await fetch(`/api/escalas?ano=${ano}&mes=${mes}`);
-        cultosAtuais = await response.json(); 
+        const data = await response.json();
         
+        cultosAtuais = Array.isArray(data) ? data : [];
         renderizarTabelaEscalas(); 
     } catch (error) {
         console.error('Erro ao carregar escalas:', error);
@@ -103,16 +122,18 @@ async function carregarEscalas() {
 
 function renderizarTabelaEscalas() {
     const tbody = document.getElementById('tbody-escalas');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
-    const ministerioSelecionado = document.getElementById('select-ministerio-gerar').value;
+    const ministerioSelecionado = document.getElementById('select-ministerio-gerar')?.value || '';
     const ministeriosDoMes = new Map();
 
     cultosAtuais.forEach(culto => {
         const dataFormatada = formatarDataParaExtenso(culto.data_culto);
         const dataHorario = `${dataFormatada} às ${culto.horario}`;
 
-        if (culto.ministerios && culto.ministerios.length > 0) {
+        if (culto.ministerios && Array.isArray(culto.ministerios)) {
             culto.ministerios.forEach(min => {
                 
                 if (ministerioSelecionado && min.ministerio_id !== ministerioSelecionado) {
@@ -129,21 +150,23 @@ function renderizarTabelaEscalas() {
                 const tr = document.createElement('tr');
                 let htmlVagas = '<div style="display:flex; flex-direction:column;">';
                 
-                min.vagas_preenchidas.forEach(vaga => {
-                    const styleVago = vaga.nome === 'VAGO' ? 'color: red; font-weight: bold;' : '';
-                    
-                    let btnEditarHtml = '';
-                    if (!min.finalizado) {
-                        btnEditarHtml = `<button class="btn-editar" onclick="abrirModalEditar('${culto._id}', '${min.ministerio_id}', '${vaga.funcao}', '${vaga.nome}', '${dataHorario}')">✏️ Editar</button>`;
-                    }
-                    
-                    htmlVagas += `
-                        <div class="vaga-item">
-                            <span><strong>${vaga.funcao}:</strong> <span style="${styleVago}">${vaga.nome}</span></span>
-                            ${btnEditarHtml}
-                        </div>
-                    `;
-                });
+                if (min.vagas_preenchidas && Array.isArray(min.vagas_preenchidas)) {
+                    min.vagas_preenchidas.forEach(vaga => {
+                        const styleVago = vaga.nome === 'VAGO' ? 'color: red; font-weight: bold;' : '';
+                        
+                        let btnEditarHtml = '';
+                        if (!min.finalizado) {
+                            btnEditarHtml = `<button class="btn-editar" onclick="abrirModalEditar('${culto._id}', '${min.ministerio_id}', '${vaga.funcao}', '${vaga.nome}', '${dataHorario}')">✏️ Editar</button>`;
+                        }
+                        
+                        htmlVagas += `
+                            <div class="vaga-item">
+                                <span><strong>${vaga.funcao}:</strong> <span style="${styleVago}">${vaga.nome}</span></span>
+                                ${btnEditarHtml}
+                            </div>
+                        `;
+                    });
+                }
                 htmlVagas += '</div>';
 
                 const statusTxt = min.finalizado 
@@ -167,6 +190,9 @@ function renderizarTabelaEscalas() {
 function renderizarPainelAcoes(ministeriosDoMes) {
     const painel = document.getElementById('painel-acoes');
     const listaAcoes = document.getElementById('lista-acoes-mes');
+    
+    if (!painel || !listaAcoes) return;
+    
     listaAcoes.innerHTML = '';
 
     if (ministeriosDoMes.size === 0) {
@@ -184,20 +210,53 @@ function renderizarPainelAcoes(ministeriosDoMes) {
             ? '<span style="color:green; font-weight:bold; margin-right:15px;">Status: ✅ Salva</span>' 
             : '<span style="color:#f39c12; font-weight:bold; margin-right:15px;">Status: ⚠️ Rascunho</span>';
         
-        // MODIFICADO: Chama o Modal para escolher o voluntário
         let botaoHtml = dados.finalizado
-            ? `<button style="background-color:#25D366; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:13px;" onclick="abrirModalWhatsApp('${id}', '${dados.nome}')">📲 WhatsApp (Individual)</button>`
+            ? `<div style="display:flex; gap:10px;">
+                 <button style="background-color:#1ebea5; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:13px;" onclick="compartilharWhatsAppCompleto('${id}', '${dados.nome}')">📲 Escala Ministério</button>
+                 <button style="background-color:#25D366; color:white; padding:8px 15px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:13px;" onclick="abrirModalWhatsApp('${id}', '${dados.nome}')">📲 Escala Individual</button>
+               </div>`
             : `<button class="btn-salvar-mes" onclick="finalizarMinisterioEscala('${id}')">💾 Salvar Escala do Mês</button>`;
 
         div.innerHTML = `
             <div style="font-size: 16px;"><strong>${dados.nome}</strong></div>
-            <div>${statusHtml} ${botaoHtml}</div>
+            <div style="display:flex; align-items:center;">${statusHtml} ${botaoHtml}</div>
         `;
         listaAcoes.appendChild(div);
     });
 }
 
-// === LÓGICA DO WHATSAPP INDIVIDUAL ===
+function compartilharWhatsAppCompleto(ministerioId, nomeMinisterio) {
+    const mesAtual = document.getElementById('input-mes').value;
+    const anoAtual = document.getElementById('input-ano').value;
+    
+    let mensagem = `🗓️ *ESCALA DO MÊS - ${nomeMinisterio.toUpperCase()}* (${mesAtual}/${anoAtual})\n\n`;
+
+    let encontrouCultos = false;
+
+    cultosAtuais.forEach(culto => {
+        const blocoMinisterio = culto.ministerios.find(m => String(m.ministerio_id) === String(ministerioId));
+        
+        if (blocoMinisterio) {
+            encontrouCultos = true;
+            const dataFormatada = formatarDataParaExtenso(culto.data_culto);
+            mensagem += `*${dataFormatada} às ${culto.horario}*\n`;
+            
+            blocoMinisterio.vagas_preenchidas.forEach(vaga => {
+                mensagem += `- ${vaga.funcao}: ${vaga.nome}\n`;
+            });
+            mensagem += `\n`; 
+        }
+    });
+
+    if (!encontrouCultos) {
+        alert("Não foram encontrados cultos para este ministério.");
+        return;
+    }
+
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
+    window.open(url, '_blank');
+}
+
 function abrirModalWhatsApp(ministerioId, nomeMinisterio) {
     document.getElementById('zap-ministerio-id').value = ministerioId;
     document.getElementById('zap-ministerio-nome').value = nomeMinisterio;
@@ -205,12 +264,11 @@ function abrirModalWhatsApp(ministerioId, nomeMinisterio) {
     const select = document.getElementById('select-voluntario-whatsapp');
     select.innerHTML = '<option value="">-- Selecione o Voluntário --</option>';
     
-    // Busca na memória quais voluntários realmente têm vaga neste ministério
     const voluntariosEscalados = new Map();
     
     cultosAtuais.forEach(culto => {
         const bloco = culto.ministerios.find(m => String(m.ministerio_id) === String(ministerioId));
-        if (bloco) {
+        if (bloco && bloco.vagas_preenchidas) {
             bloco.vagas_preenchidas.forEach(vaga => {
                 if (vaga.voluntario_id && vaga.nome !== 'VAGO') {
                     voluntariosEscalados.set(String(vaga.voluntario_id), vaga.nome);
@@ -224,7 +282,6 @@ function abrirModalWhatsApp(ministerioId, nomeMinisterio) {
         return;
     }
     
-    // Popula o dropdown apenas com as pessoas que tiraram escala
     voluntariosEscalados.forEach((nome, id) => {
         const option = document.createElement('option');
         option.value = id;
@@ -259,8 +316,7 @@ function gerarMensagemWhatsApp() {
     
     cultosAtuais.forEach(culto => {
         const bloco = culto.ministerios.find(m => String(m.ministerio_id) === String(ministerioId));
-        if (bloco) {
-            // Procura se ESSE voluntário foi escalado neste culto específico
+        if (bloco && bloco.vagas_preenchidas) {
             const vagasDoVoluntario = bloco.vagas_preenchidas.filter(v => String(v.voluntario_id) === String(voluntarioId));
             
             if (vagasDoVoluntario.length > 0) {
@@ -270,20 +326,18 @@ function gerarMensagemWhatsApp() {
                 vagasDoVoluntario.forEach(v => {
                     mensagem += `   🔹 Função: ${v.funcao}\n`;
                 });
-                mensagem += `\n`; // Quebra de linha entre os dias
+                mensagem += `\n`; 
             }
         }
     });
     
     mensagem += `Deus te abençoe! 🙏`;
     
-    // Abre o zap zap
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`;
     window.open(url, '_blank');
     
     fecharModalWhatsApp();
 }
-// =====================================
 
 async function finalizarMinisterioEscala(ministerioId) {
     const ano = document.getElementById('input-ano').value;

@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+  import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -10,7 +10,6 @@ if (!MONGO_URI) {
   process.exit(1);
 }
 
-console.log(MONGO_URI);
 const client = new MongoClient(MONGO_URI);
 let dbInstance = null;
 

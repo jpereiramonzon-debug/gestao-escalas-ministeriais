@@ -62,7 +62,7 @@ async function salvarMinisterio(event) {
     const funcoesSelecionadas = Array.from(checkboxes).map(cb => cb.value);
 
     if (funcoesSelecionadas.length === 0) {
-        alert('Selecione pelo menos uma função obrigatória para este ministério.');
+        avisar('Selecione pelo menos uma função obrigatória para este ministério.', 'aviso');
         return;
     }
 
@@ -82,16 +82,16 @@ async function salvarMinisterio(event) {
         });
 
         if (response.ok) {
-            alert(id ? 'Ministério atualizado!' : 'Ministério cadastrado!');
+            avisar(id ? 'Ministério atualizado!' : 'Ministério cadastrado!', 'sucesso');
             cancelarEdicao();
             carregarMinisterios(); 
         } else {
             const error = await response.json();
-            alert(`Erro: ${error.error}`);
+            avisar(`Erro: ${error.error}`, 'erro');
         }
     } catch (error) {
         console.error('Erro ao salvar ministério:', error);
-        alert('Erro de conexão ao salvar ministério.');
+        avisar('Erro de conexão ao salvar ministério.', 'erro');
     }
 }
 
@@ -157,16 +157,17 @@ function cancelarEdicao() {
 }
 
 async function excluirMinisterio(id) {
-    if (!confirm('Tem certeza que deseja excluir este ministério?')) return;
+    if (!(await confirmar('Tem certeza que deseja excluir este ministério?', { titulo: 'Confirmar exclusão', textoConfirmar: 'Excluir', perigo: true }))) return;
     try {
         const response = await fetch(`/api/ministerios/${id}`, { method: 'DELETE' });
         if (response.ok) {
-            alert('Ministério excluído!');
+            avisar('Ministério excluído!', 'sucesso');
             carregarMinisterios();
         } else {
-            alert('Erro ao excluir ministério.');
+            const data = await response.json().catch(() => ({}));
+            avisar(data.error || 'Erro ao excluir ministério.', 'erro');
         }
     } catch (error) {
-        alert('Erro de conexão ao excluir.');
+        avisar('Erro de conexão ao excluir.', 'erro');
     }
 }

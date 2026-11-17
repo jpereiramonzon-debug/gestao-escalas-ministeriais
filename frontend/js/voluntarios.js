@@ -74,10 +74,10 @@ async function salvarVoluntario(event) {
     const diasSelecionados = Array.from(checkboxesDias).map(cb => cb.value);
 
     if (!ministerio) {
-        alert('Selecione um ministério.'); return;
+        avisar('Selecione um ministério.', 'aviso'); return;
     }
     if (funcoesSelecionadas.length === 0) {
-        alert('Selecione pelo menos uma função apta para o voluntário.'); return;
+        avisar('Selecione pelo menos uma função apta para o voluntário.', 'aviso'); return;
     }
 
     const voluntarioData = {
@@ -99,16 +99,16 @@ async function salvarVoluntario(event) {
         });
 
         if (response.ok) {
-            alert(id ? 'Voluntário atualizado!' : 'Voluntário cadastrado!');
+            avisar(id ? 'Voluntário atualizado!' : 'Voluntário cadastrado!', 'sucesso');
             cancelarEdicao();
             carregarVoluntarios(); 
         } else {
             const data = await response.json();
-            alert(`Erro: ${data.error || 'Falha ao salvar.'}`);
+            avisar(`Erro: ${data.error || 'Falha ao salvar.'}`, 'erro');
         }
     } catch (error) {
         console.error('Erro ao salvar voluntário:', error);
-        alert('Erro de conexão ao salvar voluntário.');
+        avisar('Erro de conexão ao salvar voluntário.', 'erro');
     }
 }
 
@@ -216,17 +216,18 @@ function cancelarEdicao() {
 }
 
 async function excluirVoluntario(id) {
-    if (!confirm('Tem certeza que deseja excluir este voluntário?')) return;
+    if (!(await confirmar('Tem certeza que deseja excluir este voluntário?', { titulo: 'Confirmar exclusão', textoConfirmar: 'Excluir', perigo: true }))) return;
 
     try {
         const response = await fetch(`/api/voluntarios/${id}`, { method: 'DELETE' });
         if (response.ok) {
-            alert('Voluntário excluído!');
+            avisar('Voluntário excluído!', 'sucesso');
             carregarVoluntarios();
         } else {
-            alert('Erro ao excluir voluntário.');
+            const data = await response.json().catch(() => ({}));
+            avisar(data.error || 'Erro ao excluir voluntário.', 'erro');
         }
     } catch (error) {
-        alert('Erro de conexão ao excluir.');
+        avisar('Erro de conexão ao excluir.', 'erro');
     }
 }
